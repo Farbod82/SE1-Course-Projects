@@ -68,6 +68,11 @@ public class Order {
         this(orderId, security, side, quantity, price, broker, shareholder, LocalDateTime.now());
     }
 
+    public Order(long orderId, Security security, Side side, int quantity, int price, Broker broker, Shareholder shareholder , int minimumExecutionQuantity) {
+        this(orderId, security, side, quantity, price, broker, shareholder, LocalDateTime.now());
+        this.minimumExecutionQuantity = minimumExecutionQuantity;
+    }
+
     public Order snapshot() {
         return new Order(orderId, security, side, quantity, price, broker, shareholder, entryTime, OrderStatus.SNAPSHOT);
     }
