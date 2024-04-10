@@ -55,7 +55,7 @@ public class MinimumExecQuantityTest {
     @Test
     void test_match_sell_order_matched_quantity_is_less_than_minExceQuantity_and_rollback(){
         Broker broker1 = Broker.builder().credit(100_000_00000L).build();
-        Order order = new Order(11, security, Side.BUY, 500, 15500,
+        Order order = new Order(11, security, Side.SELL, 500, 15500,
                 broker1, shareholder ,400 );
         matcher.execute(order);
         assertThat(broker1.getCredit())
@@ -107,6 +107,23 @@ public class MinimumExecQuantityTest {
 
         assertThat(orderBook.findByOrderId(Side.SELL ,8).getQuantity())
                 .isEqualTo(735);
+    }
+
+    @Test
+    void test_match_sell_order_matched_quantity_is_grather_than_minExceQuantity(){
+        Broker broker1 = Broker.builder().credit(10_000_000L).build();
+        Order order = new Order(11, security, Side.SELL, 340, 15_500,
+                broker1, shareholder ,320 );
+        matcher.execute(order);
+
+        assertThat(broker1.getCredit())
+                .isEqualTo(15_330_800);
+        assertThat(broker.getCredit())
+                .isEqualTo(100_000_000);
+        assertThat(orderBook.findByOrderId(Side.BUY ,1)).isNull();
+
+        assertThat(orderBook.findByOrderId(Side.BUY ,2).getQuantity())
+                .isEqualTo(7);
     }
 
 }
