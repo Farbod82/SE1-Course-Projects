@@ -52,6 +52,11 @@ public class OrderHandler {
                 eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), List.of(Message.BUYER_HAS_NOT_ENOUGH_CREDIT)));
                 return;
             }
+            if (matchResult.outcome() == MatchingOutcome.MINIMUM_EXECUTION_QUANTITY_NOT_PASSED) {
+                eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), List.of(Message.MINIMUM_EXECUTION_QUANTITY_NOT_PASSED)));
+                return;
+            }
+
             if (matchResult.outcome() == MatchingOutcome.NOT_ENOUGH_POSITIONS) {
                 eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), List.of(Message.SELLER_HAS_NOT_ENOUGH_POSITIONS)));
                 return;
@@ -81,6 +86,11 @@ public class OrderHandler {
 
     private void validateEnterOrderRq(EnterOrderRq enterOrderRq) throws InvalidRequestException {
         List<String> errors = new LinkedList<>();
+        if (enterOrderRq.getQuantity() < enterOrderRq.getMinimumExecutionQuantity()){
+            errors.add(Message.INVALID_MINIMUM_TRADE_VALUE);
+        }
+        if (enterOrderRq.getMinimumExecutionQuantity() < 0)
+            errors.add(Message.NOT_VALID_MIN_EXECUTION_QUANTITY);
         if (enterOrderRq.getOrderId() <= 0)
             errors.add(Message.INVALID_ORDER_ID);
         if (enterOrderRq.getQuantity() <= 0)
