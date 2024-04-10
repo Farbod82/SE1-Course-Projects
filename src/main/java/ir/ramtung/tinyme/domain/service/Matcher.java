@@ -77,7 +77,7 @@ public class Matcher {
                 }
                 order.getBroker().decreaseCreditBy(order.getValue());
             }
-            order.resetMinimumExecutionQuantity();;
+            order.resetMinimumExecutionQuantity();
             order.getSecurity().getOrderBook().enqueue(result.remainder());
         }
         if (!result.trades().isEmpty()) {
