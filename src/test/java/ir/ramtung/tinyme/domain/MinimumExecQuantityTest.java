@@ -93,9 +93,9 @@ public class MinimumExecQuantityTest {
     @Test
     void test_match_buy_order_matched_quantity_is_grather_than_minExceQuantity(){
         Broker broker1 = Broker.builder().credit(100_000_000L).build();
-        Order order = new Order(11, security, Side.BUY, 700, 16000,
+        Order order1 = new Order(11, security, Side.BUY, 700, 16000,
                 broker1, shareholder ,500 );
-        matcher.execute(order);
+        matcher.execute(order1);
 
         assertThat(broker1.getCredit())
                 .isEqualTo(88_936_500);
@@ -107,14 +107,27 @@ public class MinimumExecQuantityTest {
 
         assertThat(orderBook.findByOrderId(Side.SELL ,8).getQuantity())
                 .isEqualTo(735);
+
+        Broker broker2 = Broker.builder().credit(100_000_000L).build();
+        Order order2 = new Order(11, security, Side.BUY, 800, 15810,
+                broker2, shareholder ,500 );
+        matcher.execute(order2);
+
+        assertThat(orderBook.findByOrderId(Side.SELL ,8)).isNull();
+        assertThat(broker2.getCredit())
+                .isEqualTo(87_352_000);
+        assertThat(broker.getCredit())
+                .isEqualTo(122_683_850L);
+        assertThat(order2.getQuantity())
+                .isEqualTo(65);
     }
 
     @Test
     void test_match_sell_order_matched_quantity_is_grather_than_minExceQuantity(){
         Broker broker1 = Broker.builder().credit(10_000_000L).build();
-        Order order = new Order(11, security, Side.SELL, 340, 15_500,
+        Order order1 = new Order(11, security, Side.SELL, 340, 15500,
                 broker1, shareholder ,320 );
-        matcher.execute(order);
+        matcher.execute(order1);
 
         assertThat(broker1.getCredit())
                 .isEqualTo(15_330_800);
@@ -124,6 +137,22 @@ public class MinimumExecQuantityTest {
 
         assertThat(orderBook.findByOrderId(Side.BUY ,2).getQuantity())
                 .isEqualTo(7);
+
+        Broker broker2 = Broker.builder().credit(10_000_000L).build();
+        Order order2 = new Order(11, security, Side.SELL, 10, 15_500,
+                broker2, shareholder ,5 );
+
+        matcher.execute(order2);
+
+        assertThat(broker2.getCredit())
+                .isEqualTo(10_108_500);
+        assertThat(broker.getCredit())
+                .isEqualTo(100_000_000);
+        assertThat(orderBook.findByOrderId(Side.BUY ,2)).isNull();
+        assertThat(order2.getQuantity())
+                .isEqualTo(3);
+
+
     }
 
 }
