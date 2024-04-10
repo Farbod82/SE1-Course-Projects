@@ -28,6 +28,7 @@ public class MinimumExecQuantityTest {
     private Shareholder shareholder;
     private OrderBook orderBook;
     private List<Order> orders;
+    private Broker broker1;
     @Autowired
     private Matcher matcher;
 
@@ -51,17 +52,19 @@ public class MinimumExecQuantityTest {
                 new Order(10, security, Side.SELL, 65, 15820, broker, shareholder)
         );
         orders.forEach(order -> orderBook.enqueue(order));
+
+        broker1 = Broker.builder().credit(100_000_000L).build();
     }
 
 
     @Test
-    void test_match_sell_order_matched_quantity_is_less_than_minExecQuantity_and_rollback(){
-        Broker broker1 = Broker.builder().credit(100_000_00000L).build();
+    void match_sell_order_matched_quantity_is_less_than_minExecQuantity_and_rollback(){
+
         Order order = new Order(11, security, Side.SELL, 500, 15500,
                 broker1, shareholder ,400 );
         matcher.execute(order);
         assertThat(broker1.getCredit())
-                .isEqualTo(100_000_00000L);
+                .isEqualTo(100_000_000L);
         assertThat(broker.getCredit())
                 .isEqualTo(100_000_000L);
 
@@ -74,13 +77,13 @@ public class MinimumExecQuantityTest {
 
 
     @Test
-    void test_match_buy_order_matched_quantity_is_less_than_minExecQuantity_and_rollback(){
-        Broker broker1 = Broker.builder().credit(100_000_00000L).build();
+    void match_buy_order_matched_quantity_is_less_than_minExecQuantity_and_rollback(){
+
         Order order = new Order(11, security, Side.BUY, 1600, 15810,
                 broker1, shareholder ,1500 );
         matcher.execute(order);
         assertThat(broker1.getCredit())
-                .isEqualTo(100_000_00000L);
+                .isEqualTo(100_000_000L);
         assertThat(broker.getCredit())
                 .isEqualTo(100_000_000L);
         assertThat(orderBook.findByOrderId(Side.SELL ,6).getQuantity())
@@ -93,8 +96,8 @@ public class MinimumExecQuantityTest {
 
 
     @Test
-    void test_match_buy_order_matched_quantity_is_grather_than_minExecQuantity(){
-        Broker broker1 = Broker.builder().credit(100_000_000L).build();
+    void match_buy_order_matched_quantity_is_grather_than_minExecQuantity(){
+
         Order order1 = new Order(11, security, Side.BUY, 700, 16000,
                 broker1, shareholder ,500 );
         matcher.execute(order1);
@@ -124,9 +127,10 @@ public class MinimumExecQuantityTest {
                 .isEqualTo(65);
     }
 
+
     @Test
-    void test_match_sell_order_matched_quantity_is_grather_than_minExecQuantity(){
-        Broker broker1 = Broker.builder().credit(10_000_000L).build();
+    void match_sell_order_matched_quantity_is_grather_than_minExecQuantity(){
+
         Order order1 = new Order(11, security, Side.SELL, 340, 15500,
                 broker1, shareholder ,320 );
         matcher.execute(order1);
@@ -154,4 +158,8 @@ public class MinimumExecQuantityTest {
         assertThat(order2.getQuantity())
                 .isEqualTo(3);
     }
+
+
+
+
 }
