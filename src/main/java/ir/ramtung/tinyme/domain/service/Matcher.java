@@ -67,7 +67,7 @@ public class Matcher {
 
         if (abs(order.getQuantity()- originalOrder.getQuantity()) < order.getMinimumExecutionQuantity()){
             rollbackTrades(order, result.trades());
-            return MatchResult.minimumTradeNotPassed();
+            return MatchResult.minimumExecutionQuantityNotPassed();
         }
         if (result.remainder().getQuantity() > 0) {
             if (order.getSide() == Side.BUY) {
@@ -77,6 +77,7 @@ public class Matcher {
                 }
                 order.getBroker().decreaseCreditBy(order.getValue());
             }
+            order.resetMinimumExecutionQuantity();;
             order.getSecurity().getOrderBook().enqueue(result.remainder());
         }
         if (!result.trades().isEmpty()) {
