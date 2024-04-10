@@ -5,7 +5,7 @@ public class Message {
 
     public static final String NOT_VALID_MIN_EXECUTION_QUANTITY = "Minimum Trade Quantity can not be less than zero";
     public static final String INVALID_MINIMUM_TRADE_VALUE = "Minimum Trade quantity is bigger than the total quantity";
-    public static final String MINIMUM_TRADE_NOT_PASSED = "Minimum Trade  not passed.";
+    public static final String MINIMUM_EXECUTION_QUANTITY_NOT_PASSED = "Minimum Execution quantity  not passed.";
     public static final String INVALID_ORDER_ID = "Invalid order ID";
     public static final String ORDER_QUANTITY_NOT_POSITIVE = "Order quantity is not-positive";
     public static final String ORDER_PRICE_NOT_POSITIVE = "Order price is not-positive";

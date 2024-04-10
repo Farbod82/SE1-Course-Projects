@@ -100,6 +100,9 @@ public class Order {
             return price < order.getPrice();
         }
     }
+    public void resetMinimumExecutionQuantity(){
+        minimumExecutionQuantity = 0;
+    }
 
     public void queue() {
         status = OrderStatus.QUEUED;

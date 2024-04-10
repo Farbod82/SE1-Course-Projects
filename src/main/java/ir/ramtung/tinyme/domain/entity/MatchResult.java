@@ -19,8 +19,8 @@ public final class MatchResult {
     public static MatchResult notEnoughPositions() {
         return new MatchResult(MatchingOutcome.NOT_ENOUGH_POSITIONS, null, new LinkedList<>());
     }
-    public static MatchResult minimumTradeNotPassed() {
-        return new MatchResult(MatchingOutcome.MINIMUM_TRADE_NOT_PASSED, null, new LinkedList<>());
+    public static MatchResult minimumExecutionQuantityNotPassed() {
+        return new MatchResult(MatchingOutcome.MINIMUM_EXECUTION_QUANTITY_NOT_PASSED, null, new LinkedList<>());
     }
     private MatchResult(MatchingOutcome outcome, Order remainder, LinkedList<Trade> trades) {
         this.outcome = outcome;
