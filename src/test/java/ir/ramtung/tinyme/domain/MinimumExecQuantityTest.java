@@ -196,20 +196,22 @@ public class MinimumExecQuantityTest {
     void min_exec_quantity_has_not_impact_on_update_order() {
 
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 11, LocalDateTime.now(), Side.BUY,
-                500, 15805, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 400));
+                500, 15805, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 200));
 
         assertThat(broker1.getCredit())
-                .isEqualTo(100_000_000L);
+                .isEqualTo(92_099_250L);
 
-        assertThat(orderBook.findByOrderId(Side.SELL ,6).getQuantity())
-                .isEqualTo(350);
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 12, LocalDateTime.now(), Side.SELL,
+                3000, 15700, broker.getBrokerId(), shareholder.getShareholderId(), 2000));
+
+        assertThat(broker1.getCredit())
+                .isEqualTo(92_099_250L);
 
         orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(1, "ABC", 11, LocalDateTime.now(), Side.BUY, 1000, 15805, 1, 1, 0));
 
-//        assertThat(broker1.getCredit())
-//                .isEqualTo(15_330_800);
-//        assertThat(broker.getCredit())
-//                .isEqualTo(100_000_000);
+        assertThat(broker1.getCredit())
+                .isEqualTo(78_665_000L);
+
     }
 
 
