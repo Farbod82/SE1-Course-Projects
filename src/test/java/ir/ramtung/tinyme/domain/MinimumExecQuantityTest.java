@@ -1,11 +1,6 @@
 package ir.ramtung.tinyme.domain;
 
 import ir.ramtung.tinyme.config.MockedJMSTestConfig;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.annotation.DirtiesContext;
-
-import ir.ramtung.tinyme.config.MockedJMSTestConfig;
 import ir.ramtung.tinyme.domain.entity.*;
 import ir.ramtung.tinyme.domain.service.Matcher;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,7 +10,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -40,7 +34,7 @@ public class MinimumExecQuantityTest {
         security = Security.builder().build();
         broker = Broker.builder().credit(100_000_000L).build();
         shareholder = Shareholder.builder().build();
-        shareholder.incPosition(security, 100_000);
+        shareholder.incPosition(security, 100_000_000_0);
         orderBook = security.getOrderBook();
         orders = Arrays.asList(
                 new Order(1, security, BUY, 304, 15700, broker, shareholder),
@@ -58,13 +52,12 @@ public class MinimumExecQuantityTest {
     }
 
 
-
     @Test
-    void test_match_sell_order_but_match_less_than_minExceQuantity_and_rollback(){
+    void test_match_sell_order_matched_quantity_is_less_than_minExceQuantity_and_rollback(){
         Broker broker1 = Broker.builder().credit(100_000_00000L).build();
         Order order = new Order(11, security, Side.BUY, 500, 15500,
                 broker1, shareholder ,400 );
-        MatchResult res = matcher.execute(order);
+        matcher.execute(order);
         assertThat(broker1.getCredit())
                 .isEqualTo(100_000_00000L);
         assertThat(broker.getCredit())
@@ -79,23 +72,41 @@ public class MinimumExecQuantityTest {
 
 
     @Test
-    void test_match_buy_order_but_match_less_than_minExceQuantity_and_rollback(){
+    void test_match_buy_order_matched_quantity_is_less_than_minExceQuantity_and_rollback(){
         Broker broker1 = Broker.builder().credit(100_000_00000L).build();
         Order order = new Order(11, security, Side.BUY, 1600, 15810,
                 broker1, shareholder ,1500 );
-        MatchResult res = matcher.execute(order);
+        matcher.execute(order);
         assertThat(broker1.getCredit())
                 .isEqualTo(100_000_00000L);
         assertThat(broker.getCredit())
                 .isEqualTo(100_000_000L);
-
         assertThat(orderBook.findByOrderId(Side.SELL ,6).getQuantity())
                 .isEqualTo(350);
         assertThat(orderBook.findByOrderId(Side.SELL ,7).getQuantity())
                 .isEqualTo(285);
         assertThat(orderBook.findByOrderId(Side.SELL ,8).getQuantity())
                 .isEqualTo(800);
+    }
 
+
+    @Test
+    void test_match_buy_order_matched_quantity_is_grather_than_minExceQuantity(){
+        Broker broker1 = Broker.builder().credit(100_000_000L).build();
+        Order order = new Order(11, security, Side.BUY, 700, 16000,
+                broker1, shareholder ,500 );
+        matcher.execute(order);
+
+        assertThat(broker1.getCredit())
+                .isEqualTo(88_936_500);
+        assertThat(broker.getCredit())
+                .isEqualTo(111_063_500L);
+        assertThat(orderBook.findByOrderId(Side.SELL ,6)).isNull();
+
+        assertThat(orderBook.findByOrderId(Side.SELL ,7)).isNull();
+
+        assertThat(orderBook.findByOrderId(Side.SELL ,8).getQuantity())
+                .isEqualTo(735);
     }
 
 }
