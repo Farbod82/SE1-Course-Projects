@@ -3,6 +3,7 @@ package ir.ramtung.tinyme.domain;
 import ir.ramtung.tinyme.config.MockedJMSTestConfig;
 import ir.ramtung.tinyme.domain.entity.*;
 import ir.ramtung.tinyme.domain.service.Matcher;
+import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -53,7 +55,7 @@ public class MinimumExecQuantityTest {
 
 
     @Test
-    void test_match_sell_order_matched_quantity_is_less_than_minExceQuantity_and_rollback(){
+    void test_match_sell_order_matched_quantity_is_less_than_minExecQuantity_and_rollback(){
         Broker broker1 = Broker.builder().credit(100_000_00000L).build();
         Order order = new Order(11, security, Side.SELL, 500, 15500,
                 broker1, shareholder ,400 );
@@ -72,7 +74,7 @@ public class MinimumExecQuantityTest {
 
 
     @Test
-    void test_match_buy_order_matched_quantity_is_less_than_minExceQuantity_and_rollback(){
+    void test_match_buy_order_matched_quantity_is_less_than_minExecQuantity_and_rollback(){
         Broker broker1 = Broker.builder().credit(100_000_00000L).build();
         Order order = new Order(11, security, Side.BUY, 1600, 15810,
                 broker1, shareholder ,1500 );
@@ -91,7 +93,7 @@ public class MinimumExecQuantityTest {
 
 
     @Test
-    void test_match_buy_order_matched_quantity_is_grather_than_minExceQuantity(){
+    void test_match_buy_order_matched_quantity_is_grather_than_minExecQuantity(){
         Broker broker1 = Broker.builder().credit(100_000_000L).build();
         Order order1 = new Order(11, security, Side.BUY, 700, 16000,
                 broker1, shareholder ,500 );
@@ -123,7 +125,7 @@ public class MinimumExecQuantityTest {
     }
 
     @Test
-    void test_match_sell_order_matched_quantity_is_grather_than_minExceQuantity(){
+    void test_match_sell_order_matched_quantity_is_grather_than_minExecQuantity(){
         Broker broker1 = Broker.builder().credit(10_000_000L).build();
         Order order1 = new Order(11, security, Side.SELL, 340, 15500,
                 broker1, shareholder ,320 );
@@ -151,8 +153,5 @@ public class MinimumExecQuantityTest {
         assertThat(orderBook.findByOrderId(Side.BUY ,2)).isNull();
         assertThat(order2.getQuantity())
                 .isEqualTo(3);
-
-
     }
-
 }
