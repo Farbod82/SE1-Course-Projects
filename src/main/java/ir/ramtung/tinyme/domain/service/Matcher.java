@@ -11,6 +11,7 @@ import static java.lang.Math.abs;
 @Service
 public class Matcher {
     public MatchResult match(Order newOrder) {
+        Security security = newOrder.getSecurity();
         OrderBook orderBook = newOrder.getSecurity().getOrderBook();
         LinkedList<Trade> trades = new LinkedList<>();
 
@@ -30,6 +31,10 @@ public class Matcher {
             }
             trade.increaseSellersCredit();
             trades.add(trade);
+            security.setLatestCost(trade);
+
+
+
 
             if (newOrder.getQuantity() >= matchingOrder.getQuantity()) {
                 newOrder.decreaseQuantity(matchingOrder.getQuantity());

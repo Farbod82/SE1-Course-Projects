@@ -8,6 +8,7 @@ import ir.ramtung.tinyme.messaging.Message;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.util.LinkedList;
 import java.util.List;
 
 @Getter
@@ -21,6 +22,19 @@ public class Security {
     @Builder.Default
     private OrderBook orderBook = new OrderBook();
 
+    @Builder.Default
+    private LinkedList<Order>  stopOrderList = new LinkedList<>();
+
+    int latestSellCost;
+    int latestBuyCost;
+
+
+    public void setLatestCost(Trade trade){
+        latestBuyCost = trade.getBuy().getPrice();
+        latestSellCost = trade.getSell().getPrice();
+    }
+
+
     public MatchResult newOrder(EnterOrderRq enterOrderRq, Broker broker, Shareholder shareholder, Matcher matcher) {
         if (enterOrderRq.getSide() == Side.SELL &&
                 !shareholder.hasEnoughPositionsOn(this,
@@ -28,15 +42,24 @@ public class Security {
             return MatchResult.notEnoughPositions();
         Order order;
         if (enterOrderRq.getStopPrice() > 0){
-
-        }
-        if (enterOrderRq.getPeakSize() == 0)
             order = new Order(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
                     enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder, enterOrderRq.getEntryTime(), OrderStatus.NEW, enterOrderRq.getMinimumExecutionQuantity(), enterOrderRq.getStopPrice());
+            if ((order.getPrice() >= latestBuyCost && enterOrderRq.getSide() == Side.BUY) || (order.getPrice() >= latestSellCost && enterOrderRq.getSide() == Side.SELL)){
+                return matcher.execute(order);
+            }
+            else{
+                stopOrderList.push(order);
+                return  MatchResult.stopLimitAccepted();
+            }
+        }
+        else if (enterOrderRq.getPeakSize() == 0)
+            order = new Order(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
+                    enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder, enterOrderRq.getEntryTime(), OrderStatus.NEW, enterOrderRq.getMinimumExecutionQuantity());
         else
             order = new IcebergOrder(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
                     enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder,
                     enterOrderRq.getEntryTime(), enterOrderRq.getPeakSize());
+
 
         return matcher.execute(order);
     }
