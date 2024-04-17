@@ -48,7 +48,7 @@ public class Security {
                 return matcher.execute(order);
             }
             else{
-                stopOrderList.push(order);
+                stopOrderList.add(order);
                 return  MatchResult.stopLimitAccepted();
             }
         }
@@ -115,5 +115,16 @@ public class Security {
             }
         }
         return matchResult;
+    }
+
+
+    public LinkedList<MatchResult> handleStopOrders(Matcher matcher){
+        LinkedList<MatchResult> lst = new LinkedList<>();
+        for(Order order : stopOrderList){
+            //condition checking
+            lst.add(matcher.execute(order));
+        }
+
+        return lst;
     }
 }
