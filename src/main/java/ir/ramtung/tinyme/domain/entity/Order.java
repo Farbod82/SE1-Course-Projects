@@ -20,6 +20,7 @@ public class Order {
     protected int price;
     protected Broker broker;
     protected Shareholder shareholder;
+    protected boolean actived = false;
     @Builder.Default
     protected LocalDateTime entryTime = LocalDateTime.now();
     @Builder.Default

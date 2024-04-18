@@ -8,8 +8,10 @@ import ir.ramtung.tinyme.messaging.Message;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Stream;
 
 @Getter
 @Builder
@@ -117,14 +119,40 @@ public class Security {
         return matchResult;
     }
 
+    private boolean mustBeActivated(Order order){
+        if(!order.isActived() &&
+                ((order.getPrice() >= latestBuyCost && order.getSide() == Side.BUY)
+                || (order.getPrice() >= latestSellCost && order.getSide() == Side.SELL)))
+            return true;
+        return false;
+
+    }
+
+    private void checkActivatedOrderExist(LinkedList<Order>  activestopOrderList){
+        for(Order order : stopOrderList){
+            if (mustBeActivated(order)){
+                activestopOrderList.add(order);
+                order.actived = true;
+            }
+        }
+
+    }
+
+    private void deleteActivatedOrder(){
+        Stream<Order> mustBeDelete =  stopOrderList.stream().filter(Order::isActived);
+        stopOrderList.removeAll(mustBeDelete.toList());
+    }
 
     public LinkedList<MatchResult> handleStopOrders(Matcher matcher){
         LinkedList<MatchResult> lst = new LinkedList<>();
-        for(Order order : stopOrderList){
-            //condition checking
-            lst.add(matcher.execute(order));
+        LinkedList<Order>  activestopOrderList = new LinkedList<>();
+        checkActivatedOrderExist(activestopOrderList);
+        int i=0;
+        while (i < activestopOrderList.size()){
+            lst.add(matcher.execute(activestopOrderList.get(i)));
+            checkActivatedOrderExist(activestopOrderList);
         }
-
+        deleteActivatedOrder();
         return lst;
     }
 }
