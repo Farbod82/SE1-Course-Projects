@@ -34,7 +34,7 @@ public class OrderHandler {
         this.matcher = matcher;
     }
 
-    public void FindActivatedStopOrders(Security security){
+    public void findActivatedStopOrders(Security security){
         LinkedList<OrderActivatedEvent> activatedOrdersEvents =  security.checkActivatedOrderExist();
         for(OrderActivatedEvent orderActivatedEvent: activatedOrdersEvents){
             eventPublisher.publish(orderActivatedEvent);
@@ -80,12 +80,12 @@ public class OrderHandler {
 
             publishMatchOutComes(matchResult,enterOrderRq);
 
-            FindActivatedStopOrders(security);
+            findActivatedStopOrders(security);
             while(security.hasAnyActiveStopOrder()){
                 matchResult = security.runSingleStopOrder(matcher);
                 EnterOrderRq stopOrderEnterOrderRq = security.getLastProcessedReqID();
                 publishMatchOutComes(matchResult,stopOrderEnterOrderRq);
-                FindActivatedStopOrders(security);
+                findActivatedStopOrders(security);
             }
 
         } catch (InvalidRequestException ex) {

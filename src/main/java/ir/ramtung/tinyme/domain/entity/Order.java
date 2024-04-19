@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
-
+import java.util.Comparator;
 import java.time.LocalDateTime;
 
 @Builder
@@ -30,8 +30,6 @@ public class Order {
     protected boolean isActive = false;
     @Builder.Default
     protected  int stopPrice  = 0;
-
-
 
     public Order(long orderId, Security security, Side side, int quantity, int price, Broker broker, Shareholder shareholder, LocalDateTime entryTime, OrderStatus status,int minimumExecutionQuantity,boolean isActive, int stopPrice) {
         this.orderId = orderId;
@@ -94,6 +92,8 @@ public class Order {
         this(orderId, security, side, quantity, price, broker, shareholder, LocalDateTime.now());
         this.minimumExecutionQuantity = minimumExecutionQuantity;
     }
+
+    static Comparator<Order> priceComparator = Comparator.comparingDouble(Order::getPrice);
 
     public Order snapshot() {
         return new Order(orderId, security, side, quantity, price, broker, shareholder, entryTime, OrderStatus.SNAPSHOT);

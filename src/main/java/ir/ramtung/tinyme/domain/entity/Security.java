@@ -11,6 +11,7 @@ import lombok.Getter;
 
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Collections;
 import java.util.List;
 
 @Getter
@@ -55,6 +56,7 @@ public class Security {
             }
             else{
                 stopOrderList.add(order);
+                Collections.sort(stopOrderList, Order.priceComparator);
                 requestIDs.put(order.getOrderId(),enterOrderRq);
                 return  MatchResult.stopLimitAccepted();
             }

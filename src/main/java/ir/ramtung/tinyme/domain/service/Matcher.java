@@ -33,9 +33,6 @@ public class Matcher {
             trades.add(trade);
             security.setLatestCost(trade);
 
-
-
-
             if (newOrder.getQuantity() >= matchingOrder.getQuantity()) {
                 newOrder.decreaseQuantity(matchingOrder.getQuantity());
                 orderBook.removeFirst(matchingOrder.getSide());
