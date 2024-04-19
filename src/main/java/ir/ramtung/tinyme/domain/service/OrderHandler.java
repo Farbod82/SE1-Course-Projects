@@ -80,6 +80,7 @@ public class OrderHandler {
 
             publishMatchOutComes(matchResult,enterOrderRq);
 
+
             findActivatedStopOrders(security);
             while(security.hasAnyActiveStopOrder()){
                 matchResult = security.runSingleStopOrder(matcher);

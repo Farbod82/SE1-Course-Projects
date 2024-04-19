@@ -32,14 +32,11 @@ public class Security {
     private HashMap<Long, EnterOrderRq> requestIDs = new HashMap<>();
     @Builder.Default
     private LinkedList<Order>  activeStopOrderList = new LinkedList<>();
-    int latestSellCost;
-    int latestBuyCost;
-
+    int latestPrice;
     EnterOrderRq lastProcessedReqID;
 
     public void setLatestCost(Trade trade){
-        latestBuyCost = trade.getBuy().getPrice();
-        latestSellCost = trade.getSell().getPrice();
+        latestPrice = trade.getPrice();
     }
 
 
@@ -52,12 +49,11 @@ public class Security {
         if (enterOrderRq.getStopPrice() > 0){
             order = new Order(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
                     enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder, enterOrderRq.getEntryTime(), OrderStatus.NEW, enterOrderRq.getMinimumExecutionQuantity(),false, enterOrderRq.getStopPrice());
-            if ((order.getStopPrice() <= latestBuyCost && enterOrderRq.getSide() == Side.BUY) || (order.getStopPrice() >= latestSellCost && enterOrderRq.getSide() == Side.SELL)){
+            if ((order.getStopPrice() <= latestPrice && enterOrderRq.getSide() == Side.BUY) || (order.getStopPrice() >= latestPrice && enterOrderRq.getSide() == Side.SELL)){
                 return matcher.execute(order);
             }
             else{
                 stopOrderList.add(order);
-                Collections.sort(stopOrderList, Order.priceComparator);
                 requestIDs.put(order.getOrderId(),enterOrderRq);
                 return  MatchResult.stopLimitAccepted();
             }
@@ -131,8 +127,8 @@ public class Security {
     }
     private boolean mustBeActivated(Order order){
         if(!order.isActive() &&
-                ((order.getStopPrice() <= latestBuyCost && order.getSide() == Side.BUY)
-                || (order.getStopPrice() >= latestSellCost && order.getSide() == Side.SELL)))
+                ((order.getStopPrice() <= latestPrice && order.getSide() == Side.BUY)
+                || (order.getStopPrice() >= latestPrice && order.getSide() == Side.SELL)))
             return true;
         return false;
 
@@ -143,12 +139,24 @@ public class Security {
 
     public LinkedList<OrderActivatedEvent> checkActivatedOrderExist(){
         LinkedList<OrderActivatedEvent> activatedOrdersRecord = new LinkedList<>();
+        LinkedList<Order> sortedActiveOrders = new LinkedList<>();
         for(Order order : stopOrderList){
             if (mustBeActivated(order)){
-                activeStopOrderList.add(order);
+                sortedActiveOrders.add(order);
                 order.isActive = true;
                 activatedOrdersRecord.add(new OrderActivatedEvent(requestIDs.get(order.getOrderId()).getRequestId(),order.getOrderId()));
             }
+
+        }
+        if (!sortedActiveOrders.isEmpty()) {
+            Side side = sortedActiveOrders.get(0).getSide();
+            if (side == Side.BUY) {
+                sortedActiveOrders.sort(Order.priceComparator);
+            }
+            else{
+                sortedActiveOrders.sort(Collections.reverseOrder(Order.priceComparator));
+            }
+            activeStopOrderList.addAll(sortedActiveOrders);
         }
         deleteActivatedOrder();
         return activatedOrdersRecord;
