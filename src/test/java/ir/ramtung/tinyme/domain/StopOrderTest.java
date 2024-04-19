@@ -18,7 +18,9 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 import static ir.ramtung.tinyme.domain.entity.Side.BUY;
@@ -91,24 +93,36 @@ public class StopOrderTest {
 
 
     @Test
-    void match_sell_order_matched_quantity_is_less_than_minExecQuantity_and_rollback(){
+    void check_stop_order_list(){
 
-        Order order = new Order(11, security, Side.SELL, 500, 15500,
-                broker1, shareholder ,400 );
-        matcher.execute(order);
-        assertThat(broker1.getCredit())
-                .isEqualTo(100_000_000L);
-        assertThat(broker.getCredit())
-                .isEqualTo(100_000_000L);
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(4, "ABC", 14, LocalDateTime.now(), Side.BUY,
+                1, 15805, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
 
-        assertThat(orderBook.findByOrderId(Side.BUY ,1).getQuantity())
-                .isEqualTo(304);
-        assertThat(orderBook.findByOrderId(Side.BUY ,2).getQuantity())
-                .isEqualTo(43);
 
-        assertThat(security.getLatestSellCost()).isEqualTo(15500);
-        assertThat(security.getLatestBuyCost()).isEqualTo(15500);
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 11, LocalDateTime.now(), Side.BUY,
+                500, 15805, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 20000));
 
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 12, LocalDateTime.now(), Side.BUY,
+                500, 15805, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 10000));
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 13, LocalDateTime.now(), Side.BUY,
+                500, 15805, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 40000));
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 13, LocalDateTime.now(), Side.BUY,
+                500, 15805, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 30000));
+
+        LinkedList<Order> stopOrderList = security.getStopOrderList();
+
+        ArrayList<Integer> stopOrderListPrices = new ArrayList<>() ;
+        ArrayList<Integer> resultPrices = new ArrayList<>(
+                Arrays.asList(10000, 20000, 30000, 40000));
+
+
+        for(Order order : stopOrderList){
+            stopOrderListPrices.add(order.getPrice());
+            System.out.println(order.getPrice());
+        }
+        assert(stopOrderListPrices.equals(resultPrices));
     }
 
 }
