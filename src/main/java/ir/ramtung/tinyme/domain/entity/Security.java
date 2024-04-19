@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 
 @Getter
 @Builder
@@ -124,7 +125,10 @@ public class Security {
         }
         return matchResult;
     }
-
+    private void deleteActivatedOrder(){
+        Stream<Order> mustBeDelete =  stopOrderList.stream().filter(Order::isActive);
+        stopOrderList.removeAll(mustBeDelete.toList());
+    }
     private boolean mustBeActivated(Order order){
         if(!order.isActive() &&
                 ((order.getPrice() >= latestBuyCost && order.getSide() == Side.BUY)
@@ -146,6 +150,7 @@ public class Security {
                 activatedOrdersRecord.add(new OrderActivatedEvent(requestIDs.get(order.getOrderId()).getRequestId(),order.getOrderId()));
             }
         }
+        deleteActivatedOrder();
         return activatedOrdersRecord;
     }
 
