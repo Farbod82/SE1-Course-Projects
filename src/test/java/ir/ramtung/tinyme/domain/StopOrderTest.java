@@ -80,7 +80,7 @@ public class StopOrderTest {
                 new Order(3, security, BUY, 445, 15450, broker, shareholder),
                 new Order(4, security, BUY, 526, 15450, broker, shareholder),
                 new Order(5, security, BUY, 1000, 15400, broker, shareholder),
-                new Order(6, security, Side.SELL, 350, 15800, broker, shareholder),
+                new Order(6, security, Side.SELL, 500, 15800, broker, shareholder),
                 new Order(7, security, Side.SELL, 285, 15810, broker, shareholder),
                 new Order(8, security, Side.SELL, 800, 15810, broker, shareholder),
                 new Order(9, security, Side.SELL, 340, 15820, broker, shareholder),
@@ -94,29 +94,26 @@ public class StopOrderTest {
 
     @Test
     void check_stop_order_list(){
-
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(4, "ABC", 14, LocalDateTime.now(), Side.BUY,
                 1, 15805, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
 
-
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 11, LocalDateTime.now(), Side.BUY,
-                500, 15805, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 20000));
+                500, 15810, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 20000));
 
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 12, LocalDateTime.now(), Side.BUY,
                 500, 15805, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 10000));
 
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 13, LocalDateTime.now(), Side.BUY,
-                500, 15805, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 40000));
+                500, 15835, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 40000));
 
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 13, LocalDateTime.now(), Side.BUY,
-                500, 15805, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 30000));
+                500, 13805, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 30000));
 
         LinkedList<Order> stopOrderList = security.getStopOrderList();
 
         ArrayList<Integer> stopOrderListPrices = new ArrayList<>() ;
         ArrayList<Integer> resultPrices = new ArrayList<>(
                 Arrays.asList(10000, 20000, 30000, 40000));
-
 
         for(Order order : stopOrderList){
             stopOrderListPrices.add(order.getPrice());
@@ -125,4 +122,22 @@ public class StopOrderTest {
         assert(stopOrderListPrices.equals(resultPrices));
     }
 
+    @Test
+    void check() {
+
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(4, "ABC", 14, LocalDateTime.now(), Side.BUY,
+                100, 15805, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+
+        assertThat(broker1.getCredit())
+                .isEqualTo(98_420_000L);
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 11, LocalDateTime.now(), Side.BUY,
+                500, 15810, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 10000));
+
+        assertThat(broker1.getCredit())
+                .isEqualTo(92_099_250L);
+
+        assertThat(orderBook.findByOrderId(Side.BUY ,12)).isNull();
+    }
 }
