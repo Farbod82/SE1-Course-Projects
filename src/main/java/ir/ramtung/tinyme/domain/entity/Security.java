@@ -1,5 +1,6 @@
 package ir.ramtung.tinyme.domain.entity;
 
+import ir.ramtung.tinyme.messaging.event.OrderActivatedEvent;
 import ir.ramtung.tinyme.messaging.exception.InvalidRequestException;
 import ir.ramtung.tinyme.messaging.request.DeleteOrderRq;
 import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
@@ -8,10 +9,9 @@ import ir.ramtung.tinyme.messaging.Message;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Stream;
 
 @Getter
 @Builder
@@ -26,10 +26,14 @@ public class Security {
 
     @Builder.Default
     private LinkedList<Order>  stopOrderList = new LinkedList<>();
-
+    @Builder.Default
+    private HashMap<Long, EnterOrderRq> requestIDs = new HashMap<>();
+    @Builder.Default
+    private LinkedList<Order>  activeStopOrderList = new LinkedList<>();
     int latestSellCost;
     int latestBuyCost;
 
+    EnterOrderRq lastProcessedReqID;
 
     public void setLatestCost(Trade trade){
         latestBuyCost = trade.getBuy().getPrice();
@@ -51,6 +55,7 @@ public class Security {
             }
             else{
                 stopOrderList.add(order);
+                requestIDs.put(order.getOrderId(),enterOrderRq);
                 return  MatchResult.stopLimitAccepted();
             }
         }
@@ -126,38 +131,30 @@ public class Security {
         return false;
 
     }
+    public  boolean hasAnyActiveStopOrder(){
+        return !activeStopOrderList.isEmpty();
+    }
 
-    private void checkActivatedOrderExist(LinkedList<Order>  activestopOrderList){
+    public LinkedList<OrderActivatedEvent> checkActivatedOrderExist(){
+        LinkedList<OrderActivatedEvent> activatedOrdersRecord = new LinkedList<>();
         for(Order order : stopOrderList){
             if (mustBeActivated(order)){
-                activestopOrderList.add(order);
+                activeStopOrderList.add(order);
                 order.isActive = true;
+                activatedOrdersRecord.add(new OrderActivatedEvent(requestIDs.get(order.getOrderId()).getRequestId(),order.getOrderId()));
             }
         }
-
+        return activatedOrdersRecord;
     }
 
-    private void deleteActivatedOrder(){
-        Stream<Order> mustBeDelete =  stopOrderList.stream().filter(Order::isActive);
-        stopOrderList.removeAll(mustBeDelete.toList());
-    }
-
-    public LinkedList<MatchResult> handleStopOrders(Matcher matcher){
-        LinkedList<MatchResult> stopOrderMatchResults = new LinkedList<>();
-        LinkedList<Order>  activeStopOrderList = new LinkedList<>();
-        checkActivatedOrderExist(activeStopOrderList);
-        int i=0;
-        while (i < activeStopOrderList.size()){
-            Order order = activeStopOrderList.get(i);
-            if (order.getSide() == Side.SELL && !order.getShareholder().hasEnoughPositionsOn(this,orderBook.totalSellQuantityByShareholder(order.getShareholder()) + order.getQuantity())){
-                stopOrderMatchResults.add(MatchResult.notEnoughPositions());
-            }
-            else {
-                stopOrderMatchResults.add(matcher.execute(order));
-            }
-            checkActivatedOrderExist(activeStopOrderList);
+    public MatchResult runSingleStopOrder(Matcher matcher){
+        Order order = activeStopOrderList.removeFirst();
+        lastProcessedReqID = requestIDs.remove(order.getOrderId());
+        if (order.getSide() == Side.SELL && !order.getShareholder().hasEnoughPositionsOn(this,orderBook.totalSellQuantityByShareholder(order.getShareholder()) + order.getQuantity())){
+            return MatchResult.notEnoughPositions();
         }
-        deleteActivatedOrder();
-        return stopOrderMatchResults;
+        else {
+            return matcher.execute(order);
+        }
     }
 }
