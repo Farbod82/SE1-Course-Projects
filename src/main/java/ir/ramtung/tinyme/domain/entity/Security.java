@@ -52,7 +52,7 @@ public class Security {
         if (enterOrderRq.getStopPrice() > 0){
             order = new Order(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
                     enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder, enterOrderRq.getEntryTime(), OrderStatus.NEW, enterOrderRq.getMinimumExecutionQuantity(),false, enterOrderRq.getStopPrice());
-            if ((order.getPrice() >= latestBuyCost && enterOrderRq.getSide() == Side.BUY) || (order.getPrice() >= latestSellCost && enterOrderRq.getSide() == Side.SELL)){
+            if ((order.getStopPrice() <= latestBuyCost && enterOrderRq.getSide() == Side.BUY) || (order.getStopPrice() >= latestSellCost && enterOrderRq.getSide() == Side.SELL)){
                 return matcher.execute(order);
             }
             else{
@@ -131,8 +131,8 @@ public class Security {
     }
     private boolean mustBeActivated(Order order){
         if(!order.isActive() &&
-                ((order.getPrice() >= latestBuyCost && order.getSide() == Side.BUY)
-                || (order.getPrice() >= latestSellCost && order.getSide() == Side.SELL)))
+                ((order.getStopPrice() <= latestBuyCost && order.getSide() == Side.BUY)
+                || (order.getStopPrice() >= latestSellCost && order.getSide() == Side.SELL)))
             return true;
         return false;
 
