@@ -45,7 +45,7 @@ public class Security {
         Order order;
         if (enterOrderRq.getStopPrice() > 0){
             order = new Order(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
-                    enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder, enterOrderRq.getEntryTime(), OrderStatus.NEW, enterOrderRq.getMinimumExecutionQuantity(), enterOrderRq.getStopPrice());
+                    enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder, enterOrderRq.getEntryTime(), OrderStatus.NEW, enterOrderRq.getMinimumExecutionQuantity(),false, enterOrderRq.getStopPrice());
             if ((order.getPrice() >= latestBuyCost && enterOrderRq.getSide() == Side.BUY) || (order.getPrice() >= latestSellCost && enterOrderRq.getSide() == Side.SELL)){
                 return matcher.execute(order);
             }
@@ -61,7 +61,6 @@ public class Security {
             order = new IcebergOrder(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
                     enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder,
                     enterOrderRq.getEntryTime(), enterOrderRq.getPeakSize());
-
 
         return matcher.execute(order);
     }
@@ -120,7 +119,7 @@ public class Security {
     }
 
     private boolean mustBeActivated(Order order){
-        if(!order.isActived() &&
+        if(!order.isActive() &&
                 ((order.getPrice() >= latestBuyCost && order.getSide() == Side.BUY)
                 || (order.getPrice() >= latestSellCost && order.getSide() == Side.SELL)))
             return true;
@@ -132,27 +131,33 @@ public class Security {
         for(Order order : stopOrderList){
             if (mustBeActivated(order)){
                 activestopOrderList.add(order);
-                order.actived = true;
+                order.isActive = true;
             }
         }
 
     }
 
     private void deleteActivatedOrder(){
-        Stream<Order> mustBeDelete =  stopOrderList.stream().filter(Order::isActived);
+        Stream<Order> mustBeDelete =  stopOrderList.stream().filter(Order::isActive);
         stopOrderList.removeAll(mustBeDelete.toList());
     }
 
     public LinkedList<MatchResult> handleStopOrders(Matcher matcher){
-        LinkedList<MatchResult> lst = new LinkedList<>();
-        LinkedList<Order>  activestopOrderList = new LinkedList<>();
-        checkActivatedOrderExist(activestopOrderList);
+        LinkedList<MatchResult> stopOrderMatchResults = new LinkedList<>();
+        LinkedList<Order>  activeStopOrderList = new LinkedList<>();
+        checkActivatedOrderExist(activeStopOrderList);
         int i=0;
-        while (i < activestopOrderList.size()){
-            lst.add(matcher.execute(activestopOrderList.get(i)));
-            checkActivatedOrderExist(activestopOrderList);
+        while (i < activeStopOrderList.size()){
+            Order order = activeStopOrderList.get(i);
+            if (order.getSide() == Side.SELL && !order.getShareholder().hasEnoughPositionsOn(this,orderBook.totalSellQuantityByShareholder(order.getShareholder()) + order.getQuantity())){
+                stopOrderMatchResults.add(MatchResult.notEnoughPositions());
+            }
+            else {
+                stopOrderMatchResults.add(matcher.execute(order));
+            }
+            checkActivatedOrderExist(activeStopOrderList);
         }
         deleteActivatedOrder();
-        return lst;
+        return stopOrderMatchResults;
     }
 }

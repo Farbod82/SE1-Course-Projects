@@ -20,7 +20,6 @@ public class Order {
     protected int price;
     protected Broker broker;
     protected Shareholder shareholder;
-    protected boolean actived = false;
     @Builder.Default
     protected LocalDateTime entryTime = LocalDateTime.now();
     @Builder.Default
@@ -28,11 +27,13 @@ public class Order {
     @Builder.Default
     protected  int minimumExecutionQuantity = 0;
     @Builder.Default
-    protected  int stopPrice;
+    protected boolean isActive = false;
+    @Builder.Default
+    protected  int stopPrice  = 0;
 
 
 
-    public Order(long orderId, Security security, Side side, int quantity, int price, Broker broker, Shareholder shareholder, LocalDateTime entryTime, OrderStatus status,int minimumExecutionQuantity, int stopPrice) {
+    public Order(long orderId, Security security, Side side, int quantity, int price, Broker broker, Shareholder shareholder, LocalDateTime entryTime, OrderStatus status,int minimumExecutionQuantity,boolean isActive, int stopPrice) {
         this.orderId = orderId;
         this.security = security;
         this.side = side;
@@ -44,6 +45,7 @@ public class Order {
         this.status = status;
         this.minimumExecutionQuantity = minimumExecutionQuantity;
         this.stopPrice = stopPrice;
+        this.isActive = isActive;
     }
 
     public Order(long orderId, Security security, Side side, int quantity, int price, Broker broker, Shareholder shareholder, LocalDateTime entryTime, OrderStatus status,int minimumExecutionQuantity) {
