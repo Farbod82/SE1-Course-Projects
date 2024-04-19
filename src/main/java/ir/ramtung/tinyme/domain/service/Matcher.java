@@ -31,7 +31,6 @@ public class Matcher {
             }
             trade.increaseSellersCredit();
             trades.add(trade);
-            security.setLatestCost(trade);
 
             if (newOrder.getQuantity() >= matchingOrder.getQuantity()) {
                 newOrder.decreaseQuantity(matchingOrder.getQuantity());
@@ -95,6 +94,7 @@ public class Matcher {
                 trade.getBuy().getShareholder().incPosition(trade.getSecurity(), trade.getQuantity());
                 trade.getSell().getShareholder().decPosition(trade.getSecurity(), trade.getQuantity());
             }
+            order.getSecurity().setLatestCost(result.trades().getLast());
         }
         return result;
     }
