@@ -30,6 +30,7 @@ import java.util.List;
 
 import static ir.ramtung.tinyme.domain.entity.Side.BUY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 
 @SpringBootTest
@@ -170,12 +171,33 @@ public class StopOrderTest {
 
     @Test
     void test_sell_limit_order_price_less_than_activated_price_and_change_lastprice(){
-        Broker broker2 = Broker.builder().credit(100_000_000L).build();
+        Broker broker2 = Broker.builder().brokerId(3).credit(100_000_000L).build();
+        brokerRepository.addBroker(broker2);
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 600, LocalDateTime.now(), Side.SELL, 300, 15700, broker2.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
-        assertThat(security.getLatestPrice()).isEqualTo(1700);
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 500, LocalDateTime.now(), Side.SELL, 50, 15700, broker2.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15800));
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 500, LocalDateTime.now(), Side.SELL, 50, 15800, broker2.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+        assertThat(broker2.getCredit()).isEqualTo(100_000_000 + 300 * 15700);
+        assertThat(security.getLatestPrice()).isEqualTo(15700);
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 500, LocalDateTime.now(), Side.SELL, 50, 15700, broker2.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15500));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 16, LocalDateTime.now(), Side.SELL, 50, 15500, broker2.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
 
+        verify(eventPublisher).publish(new OrderActivatedEvent(2, 500));
+        assertThat(security.getStopOrderList().size()).isEqualTo(0);
+    }
+
+    @Test
+    void test_buy_limit_order_activated_but_rollback_for_not_enugh_money(){
+        Broker broker2 = Broker.builder().brokerId(3).credit(20).build();
+        brokerRepository.addBroker(broker2);
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 600, LocalDateTime.now(), Side.SELL, 150, 15700, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+
+        assertThat(security.getLatestPrice()).isEqualTo(15700);
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 500, LocalDateTime.now(), Side.BUY, 50, 15810, broker2.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15800));
+        assertThat(security.getStopOrderList().size()).isEqualTo(1);
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 16, LocalDateTime.now(), Side.BUY, 50, 15800, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+
+        assertThat(broker.getCredit()).isEqualTo(1000_00_000L + 50 * 15800);
+        verify(eventPublisher).publish(new OrderActivatedEvent(2, 500));
+        assertThat(broker.getCredit()).isEqualTo(1000_00_000L + 50 * 15800);
+        assertThat(broker1.getCredit()).isEqualTo( 1000_00_000+150 * 15700 - 50 * 15800);
         assertThat(security.getStopOrderList().size()).isEqualTo(0);
     }
 
