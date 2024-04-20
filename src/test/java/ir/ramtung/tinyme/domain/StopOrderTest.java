@@ -84,12 +84,12 @@ public class StopOrderTest {
                 new Order(2, security, BUY, 43, 15500, broker, shareholder),
                 new Order(3, security, BUY, 445, 15450, broker, shareholder),
                 new Order(4, security, BUY, 526, 15450, broker, shareholder),
-                new Order(5, security, BUY, 1000, 15400, broker, shareholder)
-//                new Order(6, security, Side.SELL, 500, 15800, broker, shareholder),
-//                new Order(7, security, Side.SELL, 285, 15810, broker, shareholder),
-//                new Order(8, security, Side.SELL, 800, 15810, broker, shareholder),
-//                new Order(9, security, Side.SELL, 340, 15820, broker, shareholder),
-//                new Order(10, security, Side.SELL, 65, 15820, broker, shareholder)
+                new Order(5, security, BUY, 1000, 15400, broker, shareholder),
+                new Order(6, security, Side.SELL, 500, 15800, broker, shareholder),
+                new Order(7, security, Side.SELL, 285, 15810, broker, shareholder),
+                new Order(8, security, Side.SELL, 800, 15810, broker, shareholder),
+                new Order(9, security, Side.SELL, 340, 15820, broker, shareholder),
+                new Order(10, security, Side.SELL, 65, 15820, broker, shareholder)
         );
         orders.forEach(order -> orderBook.enqueue(order));
 
@@ -99,6 +99,7 @@ public class StopOrderTest {
 
     @Test
     void check_stop_order_list() {
+
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(4, "ABC", 14, LocalDateTime.now(), Side.BUY,
                 1, 15805, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
 
@@ -130,17 +131,20 @@ public class StopOrderTest {
     @Test
     void check_series_of_stop_orders_activate_and_run_correctly() {
 
-        Order matchingSellOrder1 = new Order(6, security, Side.SELL, 500, 15800, broker, shareholder);
-        Order matchingSellOrder2 = new Order(7, security, Side.SELL, 285, 15810, broker, shareholder);
-        Order matchingSellOrder3 = new Order(9, security, Side.SELL, 340, 15820, broker, shareholder);
-        security.getOrderBook().enqueue(matchingSellOrder1);
-        security.getOrderBook().enqueue(matchingSellOrder2);
-        security.getOrderBook().enqueue(matchingSellOrder3);
+        Order matchingSellOrder1 = orderBook.findByOrderId(Side.SELL,6);
+        Order matchingSellOrder2 = orderBook.findByOrderId(Side.SELL,7);
+        Order matchingSellOrder3 = orderBook.findByOrderId(Side.SELL,8);
+
+//        security.getOrderBook().enqueue(matchingSellOrder1);
+//        security.getOrderBook().enqueue(matchingSellOrder2);
+//        security.getOrderBook().enqueue(matchingSellOrder3);
 
         Order stopOrder1 = new Order(20,security, BUY,285,15815,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,15801);
         Order stopOrder2 = new Order(21,security, BUY,100,1400,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,15801);
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 16, LocalDateTime.now(), Side.BUY,
                 500, 15800, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+
+//        verify(eventPublisher).publish(new OrderAcceptedEvent(1, 16));
 
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(4, "ABC", 20, stopOrder1.getEntryTime(), Side.BUY,
                 200, 15815, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15801));
@@ -155,6 +159,7 @@ public class StopOrderTest {
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 17, LocalDateTime.now(), Side.BUY,
                 85, 15810, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
 
+        verify(eventPublisher).publish(new OrderAcceptedEvent(1, 16));
         verify(eventPublisher).publish(new OrderActivatedEvent(4, 20));
         verify(eventPublisher).publish(new OrderActivatedEvent(6, 21));
         Trade trade1 = new Trade(security, 15810,200,stopOrder1,matchingSellOrder2);
