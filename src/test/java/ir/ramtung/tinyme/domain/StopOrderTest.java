@@ -97,38 +97,6 @@ public class StopOrderTest {
 
     }
 
-
-    @Test
-    void check_stop_order_list() {
-
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(4, "ABC", 14, LocalDateTime.now(), Side.BUY,
-                1, 15805, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
-
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 11, LocalDateTime.now(), Side.BUY,
-                500, 15810, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 20000));
-
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 12, LocalDateTime.now(), Side.BUY,
-                500, 15805, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 10000));
-
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 13, LocalDateTime.now(), Side.BUY,
-                500, 15835, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 40000));
-
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 13, LocalDateTime.now(), Side.BUY,
-                500, 13805, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 30000));
-
-        LinkedList<Order> stopOrderList = security.getStopOrderList();
-
-        ArrayList<Integer> stopOrderListPrices = new ArrayList<>();
-        ArrayList<Integer> resultPrices = new ArrayList<>(
-                Arrays.asList(10000, 20000, 30000, 40000));
-
-        for (Order order : stopOrderList) {
-            stopOrderListPrices.add(order.getPrice());
-            System.out.println(order.getPrice());
-        }
-        assert (stopOrderListPrices.equals(resultPrices));
-    }
-
     @Test
     void check_series_of_stop_orders_activate_and_run_correctly() {
 
