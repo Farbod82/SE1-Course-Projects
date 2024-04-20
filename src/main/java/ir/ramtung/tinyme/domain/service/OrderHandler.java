@@ -55,11 +55,18 @@ public class OrderHandler {
             eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), List.of(Message.SELLER_HAS_NOT_ENOUGH_POSITIONS)));
             return;
         }
+        if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER){
+            if(enterOrderRq.getStopPrice() == 0) {
+                eventPublisher.publish(new OrderAcceptedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
+            }
+        }
+        else {
+                eventPublisher.publish(new OrderUpdatedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
+            }
 
-        if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER)
+        if(matchResult.outcome() == MatchingOutcome.STOP_LIMIT_ORDER_ACCEPTED){
             eventPublisher.publish(new OrderAcceptedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
-        else
-            eventPublisher.publish(new OrderUpdatedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
+        }
         if (!matchResult.trades().isEmpty()) {
             eventPublisher.publish(new OrderExecutedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
         }
