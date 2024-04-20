@@ -27,6 +27,7 @@ import java.util.List;
 
 import static ir.ramtung.tinyme.domain.entity.Side.BUY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 
 @SpringBootTest
@@ -222,9 +223,9 @@ public class StopOrderTest {
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 500, LocalDateTime.now(), Side.SELL, 50, 15500, broker2.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15800));
 
         assertThat(security.getStopOrderList().size()).isEqualTo(0);
-        //verify(eventPublisher).publish(new OrderActivatedEvent(2, 500));
+        verify(eventPublisher).publish(new OrderActivatedEvent(2, 500));
         verify(eventPublisher).publish(new OrderAcceptedEvent(2, 500));
-        //verify(eventPublisher).publish(new OrderExecutedEvent(2, 500 , any()));
+
 
     }
 

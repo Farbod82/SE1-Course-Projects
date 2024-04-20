@@ -8,4 +8,5 @@ public enum MatchingOutcome {
     MINIMUM_EXECUTION_QUANTITY_NOT_PASSED,
 
     STOP_LIMIT_ORDER_ACCEPTED
+
 }

@@ -57,6 +57,7 @@ public class OrderHandler {
         }
         if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER){
             if(enterOrderRq.getStopPrice() == 0) {
+
                 eventPublisher.publish(new OrderAcceptedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
             }
         }
@@ -65,11 +66,14 @@ public class OrderHandler {
             }
 
         if(matchResult.outcome() == MatchingOutcome.STOP_LIMIT_ORDER_ACCEPTED){
+
             eventPublisher.publish(new OrderAcceptedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
         }
         if (!matchResult.trades().isEmpty()) {
             eventPublisher.publish(new OrderExecutedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
         }
+
+
     }
 
     public void handleEnterOrder(EnterOrderRq enterOrderRq) {
@@ -85,6 +89,11 @@ public class OrderHandler {
                 matchResult = security.newOrder(enterOrderRq, broker, shareholder, matcher);
             else
                 matchResult = security.updateOrder(enterOrderRq, matcher);
+
+            if(enterOrderRq.getStopPrice() > 0 && matchResult.outcome() != MatchingOutcome.STOP_LIMIT_ORDER_ACCEPTED){
+                eventPublisher.publish(new OrderActivatedEvent(enterOrderRq.getRequestId(),enterOrderRq.getOrderId()));
+                eventPublisher.publish(new OrderAcceptedEvent(enterOrderRq.getRequestId(),enterOrderRq.getOrderId()));
+            }
 
             publishMatchOutComes(matchResult,enterOrderRq);
 

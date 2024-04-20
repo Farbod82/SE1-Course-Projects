@@ -40,6 +40,7 @@ public class Security {
     }
 
 
+
     public MatchResult newOrder(EnterOrderRq enterOrderRq, Broker broker, Shareholder shareholder, Matcher matcher) {
         if (enterOrderRq.getSide() == Side.SELL &&
                 !shareholder.hasEnoughPositionsOn(this,
@@ -50,6 +51,7 @@ public class Security {
             order = new Order(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
                     enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder, enterOrderRq.getEntryTime(), OrderStatus.NEW, enterOrderRq.getMinimumExecutionQuantity(),false, enterOrderRq.getStopPrice());
             if ((order.getStopPrice() <= latestPrice && enterOrderRq.getSide() == Side.BUY) || (order.getStopPrice() >= latestPrice && enterOrderRq.getSide() == Side.SELL)){
+                order.isActive = true;
                 return matcher.execute(order);
             }
             else{
