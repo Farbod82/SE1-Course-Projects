@@ -8,7 +8,6 @@ import ir.ramtung.tinyme.messaging.EventPublisher;
 import ir.ramtung.tinyme.messaging.TradeDTO;
 import ir.ramtung.tinyme.messaging.event.OrderAcceptedEvent;
 
-import ir.ramtung.tinyme.messaging.event.*;
 import ir.ramtung.tinyme.messaging.event.OrderActivatedEvent;
 import ir.ramtung.tinyme.messaging.event.OrderExecutedEvent;
 import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
@@ -23,14 +22,11 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 
 import static ir.ramtung.tinyme.domain.entity.Side.BUY;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 
 @SpringBootTest
@@ -174,20 +170,12 @@ public class StopOrderTest {
     @Test
     void check_series_of_stop_orders_activate_and_run_correctly() {
 
-        Order matchingSellOrder1 = orderBook.findByOrderId(Side.SELL,6);
         Order matchingSellOrder2 = orderBook.findByOrderId(Side.SELL,7);
-        Order matchingSellOrder3 = orderBook.findByOrderId(Side.SELL,8);
-
-//        security.getOrderBook().enqueue(matchingSellOrder1);
-//        security.getOrderBook().enqueue(matchingSellOrder2);
-//        security.getOrderBook().enqueue(matchingSellOrder3);
 
         Order stopOrder1 = new Order(20,security, BUY,285,15815,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,15801);
         Order stopOrder2 = new Order(21,security, BUY,100,1400,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,15801);
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 16, LocalDateTime.now(), Side.BUY,
                 500, 15800, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
-
-//        verify(eventPublisher).publish(new OrderAcceptedEvent(1, 16));
 
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(4, "ABC", 20, stopOrder1.getEntryTime(), Side.BUY,
                 200, 15815, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15801));
