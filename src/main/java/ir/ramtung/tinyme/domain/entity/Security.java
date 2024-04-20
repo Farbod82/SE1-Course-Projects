@@ -150,12 +150,11 @@ public class Security {
         }
         if (!sortedActiveOrders.isEmpty()) {
             Side side = sortedActiveOrders.get(0).getSide();
-            if (side == Side.BUY) {
+            if (side == Side.BUY)
                 sortedActiveOrders.sort(Order.priceComparator);
-            }
-            else{
+            else
                 sortedActiveOrders.sort(Collections.reverseOrder(Order.priceComparator));
-            }
+
             activeStopOrderList.addAll(sortedActiveOrders);
         }
         deleteActivatedOrder();
