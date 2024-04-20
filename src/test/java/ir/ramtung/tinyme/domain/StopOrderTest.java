@@ -6,6 +6,7 @@ import ir.ramtung.tinyme.domain.service.Matcher;
 import ir.ramtung.tinyme.domain.service.OrderHandler;
 import ir.ramtung.tinyme.messaging.EventPublisher;
 import ir.ramtung.tinyme.messaging.event.OrderAcceptedEvent;
+import ir.ramtung.tinyme.messaging.event.*;
 import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
 import ir.ramtung.tinyme.repository.BrokerRepository;
 import ir.ramtung.tinyme.repository.SecurityRepository;
@@ -139,5 +140,61 @@ public class StopOrderTest {
                 .isEqualTo(92_099_250L);
 
         assertThat(orderBook.findByOrderId(Side.BUY ,12)).isNull();
+    }
+
+
+    @Test
+    void test_sell_limit_order_price_less_than_activated_price_and_change_lastprice(){
+        Broker broker2 = Broker.builder().credit(100_000_000L).build();
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 600, LocalDateTime.now(), Side.SELL, 300, 15700, broker2.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+        assertThat(security.getLatestPrice()).isEqualTo(1700);
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 500, LocalDateTime.now(), Side.SELL, 50, 15700, broker2.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15800));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 500, LocalDateTime.now(), Side.SELL, 50, 15800, broker2.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+
+        assertThat(security.getStopOrderList().size()).isEqualTo(0);
+    }
+
+    void createTestOrders(Side side)
+    {
+        securityRepository.clear();
+        brokerRepository.clear();
+        shareholderRepository.clear();
+
+        security = Security.builder().isin("ABC").build();
+        securityRepository.addSecurity(security);
+
+        broker = Broker.builder().credit(100_000_000L).brokerId(0).build();
+        broker1 = Broker.builder().credit(100_000_000L).brokerId(1).build();
+        brokerRepository.addBroker(broker1);
+
+        shareholder = Shareholder.builder().shareholderId(1).build();
+        shareholder.incPosition(security, 100_000_000_0);
+        shareholderRepository.addShareholder(shareholder);
+
+        orderBook = security.getOrderBook();
+        var testOrders = List.of(
+                new Order(200, security,side, 300, 1600, broker, shareholder),
+                new Order(300, security,side, 300, 1700, broker, shareholder),
+                new Order(400, security,side, 300, 1800, broker, shareholder)
+        );
+        for(Order order : testOrders){
+            orderBook.enqueue(order);
+        }
+    }
+    @Test
+    void new_sell_stoplimit_matches_successfully(){
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 600, LocalDateTime.now(), Side.SELL, 300, 1500, 2, shareholder.getShareholderId(), 0, 0, 1400));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 500, LocalDateTime.now(), Side.SELL, 250, 1600, 2, shareholder.getShareholderId(), 0, 0, 0));
+        // Order newNormalSell = new Order(500, security, Side.SELL, 250, 1600, broker2, shareholder);
+        // Order stopLimit = new Order(500, security, Side.SELL, 250, 1600, broker2, shareholder);
+
+        verify(eventPublisher).publish((new OrderAcceptedEvent(1, 600)));
+        verify(eventPublisher).publish((new OrderAcceptedEvent(2, 500)));
+        verify(eventPublisher).publish(new OrderActivatedEvent(1, 600));
+        Trade trade1 = new Trade(security, 1800, 50, security.getOrderBook().findByOrderId(Side.BUY, 400), security.getOrderBook().findByOrderId(Side.BUY, 600));
+        Trade trade2 = new Trade(security, 1800, 250, security.getOrderBook().findByOrderId(Side.BUY, 300), security.getOrderBook().findByOrderId(Side.BUY, 600));
+        //verify(eventPublisher).publish(new OrderExecutedEvent(1, 600, List.of(new TradeDTO(trade1), new TradeDTO(trade2))));
+        assertThat(security.getOrderBook().findByOrderId(Side.SELL, 600)).isEqualTo(null);
     }
 }
