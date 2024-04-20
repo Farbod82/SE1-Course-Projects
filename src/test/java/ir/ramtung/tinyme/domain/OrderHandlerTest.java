@@ -586,4 +586,16 @@ public class OrderHandlerTest {
         );
     }
 
+    @Test
+    void invalid_new_stop_limit_order_because_is_iceberg() {
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, LocalDateTime.now(), Side.SELL, 12, 1001, 1, shareholder.getShareholderId(), 10, 0,10));
+        verify(eventPublisher).publish(new OrderRejectedEvent(1, 20, List.of(Message.STOP_LIMIT_ORDER_NOT_ACCEPTED)));
+    }
+
+    @Test
+    void invalid_new_stop_limit_order_because_has_min_exec_quantity() {
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, LocalDateTime.now(), Side.SELL, 12, 1001, 1, shareholder.getShareholderId(), 0, 10,10));
+        verify(eventPublisher).publish(new OrderRejectedEvent(1, 20, List.of(Message.STOP_LIMIT_ORDER_NOT_ACCEPTED)));
+    }
+
 }
