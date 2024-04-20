@@ -7,12 +7,10 @@ import ir.ramtung.tinyme.domain.service.OrderHandler;
 import ir.ramtung.tinyme.messaging.EventPublisher;
 import ir.ramtung.tinyme.messaging.TradeDTO;
 import ir.ramtung.tinyme.messaging.event.OrderAcceptedEvent;
-<<<<<<< HEAD
+
 import ir.ramtung.tinyme.messaging.event.*;
-=======
 import ir.ramtung.tinyme.messaging.event.OrderActivatedEvent;
 import ir.ramtung.tinyme.messaging.event.OrderExecutedEvent;
->>>>>>> 28edf2f49235e27504fcbd48af01ec31d1451236
 import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
 import ir.ramtung.tinyme.repository.BrokerRepository;
 import ir.ramtung.tinyme.repository.SecurityRepository;
@@ -176,33 +174,6 @@ public class StopOrderTest {
         assertThat(security.getStopOrderList().size()).isEqualTo(0);
     }
 
-    void createTestOrders(Side side)
-    {
-        securityRepository.clear();
-        brokerRepository.clear();
-        shareholderRepository.clear();
-
-        security = Security.builder().isin("ABC").build();
-        securityRepository.addSecurity(security);
-
-        broker = Broker.builder().credit(100_000_000L).brokerId(0).build();
-        broker1 = Broker.builder().credit(100_000_000L).brokerId(1).build();
-        brokerRepository.addBroker(broker1);
-
-        shareholder = Shareholder.builder().shareholderId(1).build();
-        shareholder.incPosition(security, 100_000_000_0);
-        shareholderRepository.addShareholder(shareholder);
-
-        orderBook = security.getOrderBook();
-        var testOrders = List.of(
-                new Order(200, security,side, 300, 1600, broker, shareholder),
-                new Order(300, security,side, 300, 1700, broker, shareholder),
-                new Order(400, security,side, 300, 1800, broker, shareholder)
-        );
-        for(Order order : testOrders){
-            orderBook.enqueue(order);
-        }
-    }
     @Test
     void new_sell_stoplimit_matches_successfully(){
 
