@@ -182,6 +182,21 @@ public class StopOrderTest {
         verify(eventPublisher).publish(new OrderActivatedEvent(2, 500));
         assertThat(security.getStopOrderList().size()).isEqualTo(0);
     }
+    @Test
+    void test_sell_limit_order_price_match_directly(){
+        Broker broker2 = Broker.builder().brokerId(3).credit(100_000_000L).build();
+        brokerRepository.addBroker(broker2);
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 600, LocalDateTime.now(), Side.SELL, 300, 15700, broker2.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+        assertThat(broker2.getCredit()).isEqualTo(100_000_000 + 300 * 15700);
+        assertThat(security.getLatestPrice()).isEqualTo(15700);
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 500, LocalDateTime.now(), Side.SELL, 50, 15500, broker2.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15800));
+
+        assertThat(security.getStopOrderList().size()).isEqualTo(0);
+        //verify(eventPublisher).publish(new OrderActivatedEvent(2, 500));
+        verify(eventPublisher).publish(new OrderAcceptedEvent(2, 500));
+        //verify(eventPublisher).publish(new OrderExecutedEvent(2, 500 , any()));
+
+    }
 
     @Test
     void test_buy_limit_order_activated_but_rollback_for_not_enugh_money(){
