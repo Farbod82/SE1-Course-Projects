@@ -151,9 +151,9 @@ public class Security {
         if (!sortedActiveOrders.isEmpty()) {
             Side side = sortedActiveOrders.get(0).getSide();
             if (side == Side.BUY)
-                sortedActiveOrders.sort(Order.priceComparator);
+                sortedActiveOrders.sort(Order.buyPriceComparator);
             else
-                sortedActiveOrders.sort(Collections.reverseOrder(Order.priceComparator));
+                sortedActiveOrders.sort(Order.sellPriceComparator);
 
             activeStopOrderList.addAll(sortedActiveOrders);
         }
