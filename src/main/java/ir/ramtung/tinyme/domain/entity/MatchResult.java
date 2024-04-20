@@ -24,8 +24,8 @@ public final class MatchResult {
     public static MatchResult minimumExecutionQuantityNotPassed() {
         return new MatchResult(MatchingOutcome.MINIMUM_EXECUTION_QUANTITY_NOT_PASSED, null, new LinkedList<>());
     }
-    public static MatchResult stopLimitPriceNotPassed() {
-        return new MatchResult(MatchingOutcome.STOP_LIMIT_PRICE_NOT_PASSED, null, new LinkedList<>());
+    public static MatchResult stopLimitOrderNotAccepted() {
+        return new MatchResult(MatchingOutcome.STOP_LIMIT_ORDER_NOT_ACCEPTED, null, new LinkedList<>());
     }
     private MatchResult(MatchingOutcome outcome, Order remainder, LinkedList<Trade> trades) {
         this.outcome = outcome;

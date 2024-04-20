@@ -48,7 +48,7 @@ public class Security {
         Order order;
         if (enterOrderRq.getStopPrice() > 0){
             if(enterOrderRq.getPeakSize() > 0 || enterOrderRq.getMinimumExecutionQuantity() > 0)
-                return MatchResult.stopLimitPriceNotPassed();
+                return MatchResult.stopLimitOrderNotAccepted();
 
             order = new Order(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
                     enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder, enterOrderRq.getEntryTime(), OrderStatus.NEW, enterOrderRq.getMinimumExecutionQuantity(),false, enterOrderRq.getStopPrice());

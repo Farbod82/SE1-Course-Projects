@@ -19,6 +19,6 @@ public class Message {
     public static final String QUANTITY_NOT_MULTIPLE_OF_LOT_SIZE = "Quantity is not a multiple of security lot size";
     public static final String PRICE_NOT_MULTIPLE_OF_TICK_SIZE = "Price is not a multiple of security tick size";
     public static final String SELLER_HAS_NOT_ENOUGH_POSITIONS = "Seller has not enough positions";
-    public static final String STOP_LIMIT_PRICE_NOT_PASSED = "Stop limit order not passed";
+    public static final String STOP_LIMIT_ORDER_NOT_ACCEPTED = "Stop limit order not passed";
 
 }
