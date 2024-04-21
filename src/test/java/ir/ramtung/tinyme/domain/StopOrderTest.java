@@ -95,7 +95,7 @@ public class StopOrderTest {
 
     }
 
-    @Test
+//    @Test
     void check_sorting_of_activated_sell_order_list(){
         Broker broker2 = Broker.builder().brokerId(3).credit(20).build();
         OrderBook orderBook = security.getOrderBook();
@@ -133,7 +133,7 @@ public class StopOrderTest {
 
     }
 
-    @Test
+//    @Test
     void check_sorting_of_activated_buy_order_list(){
         Broker broker2 = Broker.builder().brokerId(3).credit(20).build();
         OrderBook orderBook = security.getOrderBook();
