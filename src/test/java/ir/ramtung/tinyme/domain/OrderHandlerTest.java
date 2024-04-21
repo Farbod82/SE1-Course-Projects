@@ -615,6 +615,11 @@ public class OrderHandlerTest {
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 21, LocalDateTime.now(), Side.BUY, 1600, 700, 10, shareholder.getShareholderId(), 0, 0,0));
         orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(4, "ABC", 21, LocalDateTime.now(), Side.BUY, 1600, 700, 10, shareholder.getShareholderId(), 0, 12));
         verify(eventPublisher).publish(new OrderRejectedEvent(4, 21, List.of(Message.CANNOT_SPECIFY_STOP_LIMIT_PRICE_FOR_A_NON_STOP_LIMIT_ORDER)));
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(5, "ABC", 22, LocalDateTime.now(), Side.BUY, 1600, 700, 10, shareholder.getShareholderId(), 5, 0,0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(6, "ABC", 22, LocalDateTime.now(), Side.BUY, 1600, 700, 10, shareholder.getShareholderId(), 5, 12));
+        verify(eventPublisher).publish(new OrderRejectedEvent(6, 22, List.of(Message.CANNOT_SPECIFY_STOP_LIMIT_PRICE_FOR_A_NON_STOP_LIMIT_ORDER)));
+
     }
 
 }
