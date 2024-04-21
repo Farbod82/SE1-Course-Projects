@@ -124,10 +124,11 @@ public class Security {
         }
         else{
             if(order.getSide() == Side.BUY){
-                order.getBroker().increaseCreditBy(order.getValue());
+
                 if(!order.getBroker().hasEnoughCredit((long) updateOrderRq.getPrice() *updateOrderRq.getQuantity())) {
                     return MatchResult.notEnoughCredit();
                 }
+                order.getBroker().increaseCreditBy(order.getValue());
                 order.getBroker().decreaseCreditBy((long) updateOrderRq.getPrice() *updateOrderRq.getQuantity());
             }
             stopOrder.updateFromRequest(updateOrderRq);

@@ -459,4 +459,20 @@ public class StopOrderTest {
     }
 
 
+    @Test
+    void check_updating_more_than_buyers_credit_correctly_fails() {
+        Broker broker2 = Broker.builder().brokerId(3).credit(15901).build();
+        brokerRepository.addBroker(broker2);
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1,"ABC",20,LocalDateTime.now(), Side.BUY, 1, 15900, 3, shareholder.getShareholderId(), 0, 0,1500));
+        assertThat(security.getStopOrderList().size()).isEqualTo(1);
+        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(2,"ABC",20,LocalDateTime.now(), BUY,1,15910,3,shareholder.getShareholderId(),0,1500));
+        assertThat(security.getStopOrderList().get(0).getPrice()).isEqualTo(15900);
+        assertThat(broker2.getCredit()).isEqualTo(1);
+        verify(eventPublisher).publish(new OrderRejectedEvent(2,20,List.of(Message.BUYER_HAS_NOT_ENOUGH_CREDIT)));
+    }
+
+
+
+
+
 }
