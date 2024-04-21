@@ -561,7 +561,7 @@ public class OrderHandlerTest {
     }
 
     @Test
-    void invalid_new_order_with_minimum_exec_quantity_gerater_than_quantity() {
+    void invalid_new_order_with_with_minimum_exec_quantity_gerater_than_quantity() {
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 1, LocalDateTime.now(), Side.SELL, 12, 1001, 1, shareholder.getShareholderId(), 0, 15));
 
         ArgumentCaptor<OrderRejectedEvent> orderRejectedCaptor = ArgumentCaptor.forClass(OrderRejectedEvent.class);
@@ -596,6 +596,25 @@ public class OrderHandlerTest {
     void invalid_new_stop_limit_order_because_has_min_exec_quantity() {
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, LocalDateTime.now(), Side.SELL, 12, 1001, 1, shareholder.getShareholderId(), 0, 10,10));
         verify(eventPublisher).publish(new OrderRejectedEvent(1, 20, List.of(Message.STOP_LIMIT_ORDER_NOT_ACCEPTED)));
+    }
+
+    @Test
+    void invalid_update_stop_limit_price(){
+        Broker broker4 = Broker.builder().brokerId(10).credit(100_000_000).build();
+        brokerRepository.addBroker(broker4);
+
+        List<Order> orders = Arrays.asList(
+                new Order(1, security, Side.BUY, 500, 570, broker3, shareholder),
+                new Order(2, security, Side.SELL, 50, 570, broker3, shareholder)
+        );
+        orders.forEach(order -> security.getOrderBook().enqueue(order));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, LocalDateTime.now(), Side.SELL, 600, 500, 1, shareholder.getShareholderId(), 0, 0,10));
+        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(2, "ABC", 20, LocalDateTime.now(), Side.SELL, 600, 500, 1, shareholder.getShareholderId(), 0, 12));
+        verify(eventPublisher).publish(new OrderRejectedEvent(2, 20, List.of(Message.CANNOT_SPECIFY_STOP_LIMIT_PRICE_FOR_A_ACTIVATED_STOP_LIMIT_ORDER)));
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 21, LocalDateTime.now(), Side.BUY, 1600, 700, 10, shareholder.getShareholderId(), 0, 0,0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(4, "ABC", 21, LocalDateTime.now(), Side.BUY, 1600, 700, 10, shareholder.getShareholderId(), 0, 12));
+        verify(eventPublisher).publish(new OrderRejectedEvent(4, 21, List.of(Message.CANNOT_SPECIFY_STOP_LIMIT_PRICE_FOR_A_NON_STOP_LIMIT_ORDER)));
     }
 
 }
