@@ -5,11 +5,10 @@ import ir.ramtung.tinyme.domain.entity.*;
 import ir.ramtung.tinyme.domain.service.Matcher;
 import ir.ramtung.tinyme.domain.service.OrderHandler;
 import ir.ramtung.tinyme.messaging.EventPublisher;
+import ir.ramtung.tinyme.messaging.Message;
 import ir.ramtung.tinyme.messaging.TradeDTO;
-import ir.ramtung.tinyme.messaging.event.OrderAcceptedEvent;
+import ir.ramtung.tinyme.messaging.event.*;
 
-import ir.ramtung.tinyme.messaging.event.OrderActivatedEvent;
-import ir.ramtung.tinyme.messaging.event.OrderExecutedEvent;
 import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
 import ir.ramtung.tinyme.repository.BrokerRepository;
 import ir.ramtung.tinyme.repository.SecurityRepository;
@@ -91,8 +90,6 @@ public class StopOrderTest {
                 new Order(10, security, SELL, 65, 15820, broker, shareholder)
         );
         orders.forEach(order -> orderBook.enqueue(order));
-
-
     }
 
 //    @Test
@@ -345,6 +342,108 @@ public class StopOrderTest {
         verify(eventPublisher).publish(new OrderActivatedEvent(3, 21));
         verify(eventPublisher).publish(new OrderActivatedEvent(4, 22));
 
+    }
+
+    @Test
+    void invalid_new_stop_limit_order_because_is_iceberg() {
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, LocalDateTime.now(), Side.SELL, 12, 1001, 1, shareholder.getShareholderId(), 10, 0,10));
+        verify(eventPublisher).publish(new OrderRejectedEvent(1, 20, List.of(Message.STOP_LIMIT_ORDER_NOT_ACCEPTED)));
+    }
+
+    @Test
+    void invalid_new_stop_limit_order_because_has_min_exec_quantity() {
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, LocalDateTime.now(), Side.SELL, 12, 1001, 1, shareholder.getShareholderId(), 0, 10,10));
+        verify(eventPublisher).publish(new OrderRejectedEvent(1, 20, List.of(Message.STOP_LIMIT_ORDER_NOT_ACCEPTED)));
+    }
+
+    @Test
+    void invalid_update_stop_limit_price_because_is_actived_stop_order_or_is_not_stop_order(){
+        security = Security.builder().isin("ABC").build();
+        securityRepository.addSecurity(security);
+
+        broker = Broker.builder().credit(100_000_000L).brokerId(0).build();
+        brokerRepository.addBroker(broker1);
+
+        shareholder = Shareholder.builder().shareholderId(1).build();
+        shareholder.incPosition(security, 100_000_000_0);
+        shareholderRepository.addShareholder(shareholder);
+
+        orderBook = security.getOrderBook();
+        List<Order> orders = Arrays.asList(
+                new Order(1, security, Side.BUY, 500, 570, broker, shareholder),
+                new Order(2, security, Side.SELL, 50, 570, broker, shareholder)
+        );
+        orders.forEach(order -> orderBook.enqueue(order));
+
+
+        Broker broker4 = Broker.builder().brokerId(10).credit(100_000_000).build();
+        brokerRepository.addBroker(broker4);
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, LocalDateTime.now(), Side.SELL, 600, 500, 1, shareholder.getShareholderId(), 0, 0,10));
+        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(2, "ABC", 20, LocalDateTime.now(), Side.SELL, 600, 500, 1, shareholder.getShareholderId(), 0, 12));
+        verify(eventPublisher).publish(new OrderRejectedEvent(2, 20, List.of(Message.CANNOT_SPECIFY_STOP_LIMIT_PRICE_FOR_A_ACTIVATED_STOP_LIMIT_ORDER)));
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 21, LocalDateTime.now(), Side.BUY, 1600, 700, 10, shareholder.getShareholderId(), 0, 0,0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(4, "ABC", 21, LocalDateTime.now(), Side.BUY, 1600, 700, 10, shareholder.getShareholderId(), 0, 12));
+        verify(eventPublisher).publish(new OrderRejectedEvent(4, 21, List.of(Message.CANNOT_SPECIFY_STOP_LIMIT_PRICE_FOR_A_NON_STOP_LIMIT_ORDER)));
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(5, "ABC", 22, LocalDateTime.now(), Side.BUY, 1600, 700, 10, shareholder.getShareholderId(), 700, 0,0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(6, "ABC", 22, LocalDateTime.now(), Side.BUY, 1600, 700, 10, shareholder.getShareholderId(), 650, 12));
+        verify(eventPublisher).publish(new OrderRejectedEvent(6, 22, List.of(Message.CANNOT_SPECIFY_STOP_LIMIT_PRICE_FOR_A_NON_STOP_LIMIT_ORDER)));
+    }
+
+    @Test
+    void invalid_update_stop_limit_price_because_want_to_change_peak_size(){
+        security = Security.builder().isin("ABC").build();
+        securityRepository.addSecurity(security);
+
+        broker = Broker.builder().credit(100_000_000L).brokerId(0).build();
+        brokerRepository.addBroker(broker1);
+
+        shareholder = Shareholder.builder().shareholderId(1).build();
+        shareholder.incPosition(security, 100_000_000_0);
+        shareholderRepository.addShareholder(shareholder);
+
+        orderBook = security.getOrderBook();
+        List<Order> orders = Arrays.asList(
+                new Order(1, security, Side.BUY, 500, 570, broker, shareholder),
+                new Order(2, security, Side.SELL, 50, 570, broker, shareholder)
+        );
+        orders.forEach(order -> orderBook.enqueue(order));
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, LocalDateTime.now(), Side.SELL, 600, 500, 1, shareholder.getShareholderId(), 0, 0,12));
+        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(2, "ABC", 20, LocalDateTime.now(), Side.SELL, 600, 500, 1, shareholder.getShareholderId(), 5, 12));
+        verify(eventPublisher).publish(new OrderRejectedEvent(2, 20, List.of(Message.CANNOT_SPECIFY_PEAK_SIZE_FOR_A_NON_ICEBERG_ORDER)));
+    }
+
+    @Test
+    void update_actived_stop_limit_order_done_successfully (){
+        List<Order> orders = Arrays.asList(
+                new Order(1, security, Side.BUY, 500, 570, broker, shareholder)
+        );
+        orders.forEach(order -> security.getOrderBook().enqueue(order));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, LocalDateTime.now(), Side.BUY, 600, 600, 1, shareholder.getShareholderId(), 0, 0,0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 21, LocalDateTime.now(), Side.SELL, 600, 600, 2, shareholder.getShareholderId(), 0, 0,0));
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 22, LocalDateTime.now(), Side.BUY, 600, 600, 1, shareholder.getShareholderId(), 0, 0,550));
+        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(4, "ABC", 22, LocalDateTime.now(), Side.BUY, 700, 600, 1, shareholder.getShareholderId(), 0, 550));
+
+        verify(eventPublisher).publish(new OrderUpdatedEvent(4, 22));
+    }
+
+    @Test
+    void update_unactive_stop_limit_order_done_successfully (){
+        List<Order> orders = Arrays.asList(
+                new Order(1, security, Side.BUY, 500, 570, broker, shareholder)
+        );
+        orders.forEach(order -> security.getOrderBook().enqueue(order));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, LocalDateTime.now(), Side.BUY, 600, 600, 1, shareholder.getShareholderId(), 0, 0,0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 21, LocalDateTime.now(), Side.SELL, 600, 600, 2, shareholder.getShareholderId(), 0, 0,0));
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 22, LocalDateTime.now(), Side.BUY, 600, 600, 1, shareholder.getShareholderId(), 0, 0,650));
+        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(4, "ABC", 22, LocalDateTime.now(), Side.BUY, 750, 700, 1, shareholder.getShareholderId(), 0, 660));
+
+        verify(eventPublisher).publish(new OrderUpdatedEvent(4, 22));
     }
 
 
