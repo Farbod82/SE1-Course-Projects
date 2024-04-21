@@ -646,4 +646,19 @@ public class OrderHandlerTest {
 
         verify(eventPublisher).publish(new OrderUpdatedEvent(4, 22));
     }
+
+    @Test
+    void update_unactive_stop_limit_order_done_successfully (){
+        List<Order> orders = Arrays.asList(
+                new Order(1, security, Side.BUY, 500, 570, broker3, shareholder)
+        );
+        orders.forEach(order -> security.getOrderBook().enqueue(order));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, LocalDateTime.now(), Side.BUY, 600, 600, 1, shareholder.getShareholderId(), 0, 0,0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 21, LocalDateTime.now(), Side.SELL, 600, 600, 2, shareholder.getShareholderId(), 0, 0,0));
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 22, LocalDateTime.now(), Side.BUY, 600, 600, 1, shareholder.getShareholderId(), 0, 0,650));
+        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(4, "ABC", 22, LocalDateTime.now(), Side.BUY, 750, 700, 1, shareholder.getShareholderId(), 0, 660));
+
+        verify(eventPublisher).publish(new OrderUpdatedEvent(4, 22));
+    }
 }
