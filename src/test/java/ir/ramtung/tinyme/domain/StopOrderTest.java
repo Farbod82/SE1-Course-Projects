@@ -9,6 +9,7 @@ import ir.ramtung.tinyme.messaging.Message;
 import ir.ramtung.tinyme.messaging.TradeDTO;
 import ir.ramtung.tinyme.messaging.event.*;
 
+import ir.ramtung.tinyme.messaging.request.DeleteOrderRq;
 import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
 import ir.ramtung.tinyme.repository.BrokerRepository;
 import ir.ramtung.tinyme.repository.SecurityRepository;
@@ -349,7 +350,7 @@ public class StopOrderTest {
     }
 
     @Test
-    void update_actived_stop_limit_order_done_successfully (){
+    void update_activated_stop_limit_order_done_successfully (){
         security = Security.builder().isin("ABC").build();
         securityRepository.addSecurity(security);
 
@@ -401,6 +402,60 @@ public class StopOrderTest {
         orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(4, "ABC", 22, LocalDateTime.now(), Side.BUY, 750, 700, 1, shareholder.getShareholderId(), 0, 660));
 
         verify(eventPublisher).publish(new OrderUpdatedEvent(4, 22));
+    }
+
+    @Test
+    void delete_unactivated_stop_limit_order_done_successfully (){
+        security = Security.builder().isin("ABC").build();
+        securityRepository.addSecurity(security);
+
+        broker = Broker.builder().credit(100_000_000L).brokerId(0).build();
+        brokerRepository.addBroker(broker1);
+
+        shareholder = Shareholder.builder().shareholderId(1).build();
+        shareholder.incPosition(security, 100_000_000_0);
+        shareholderRepository.addShareholder(shareholder);
+
+        orderBook = security.getOrderBook();
+
+        List<Order> orders = Arrays.asList(
+                new Order(1, security, Side.BUY, 500, 570, broker, shareholder)
+        );
+        orders.forEach(order -> security.getOrderBook().enqueue(order));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, LocalDateTime.now(), Side.BUY, 600, 600, 1, shareholder.getShareholderId(), 0, 0,0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 21, LocalDateTime.now(), Side.SELL, 600, 600, 1, shareholder.getShareholderId(), 0, 0,0));
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 22, LocalDateTime.now(), Side.BUY, 600, 600, 1, shareholder.getShareholderId(), 0, 0,650));
+        orderHandler.handleDeleteOrder(new DeleteOrderRq(4, security.getIsin(), Side.BUY, 22));
+        verify(eventPublisher).publish(new OrderDeletedEvent(4, 22));
+    }
+
+
+    @Test
+    void delete_activated_stop_limit_order_done_successfully (){
+        security = Security.builder().isin("ABC").build();
+        securityRepository.addSecurity(security);
+
+        broker = Broker.builder().credit(100_000_000L).brokerId(0).build();
+        brokerRepository.addBroker(broker1);
+
+        shareholder = Shareholder.builder().shareholderId(1).build();
+        shareholder.incPosition(security, 100_000_000_0);
+        shareholderRepository.addShareholder(shareholder);
+
+        orderBook = security.getOrderBook();
+        List<Order> orders = Arrays.asList(
+                new Order(1, security, Side.BUY, 500, 570, broker, shareholder),
+                new Order(2, security, Side.SELL, 50, 570, broker, shareholder)
+        );
+
+        orders.forEach(order -> security.getOrderBook().enqueue(order));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, LocalDateTime.now(), Side.BUY, 600, 600, 1, shareholder.getShareholderId(), 0, 0,0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 21, LocalDateTime.now(), Side.SELL, 600, 600, 1, shareholder.getShareholderId(), 0, 0,0));
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 22, LocalDateTime.now(), Side.BUY, 600, 600, 1, shareholder.getShareholderId(), 0, 0,550));
+        orderHandler.handleDeleteOrder(new DeleteOrderRq(4, security.getIsin(), Side.BUY, 22));
+        verify(eventPublisher).publish(new OrderDeletedEvent(4, 22));
     }
 
 
