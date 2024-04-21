@@ -61,7 +61,6 @@ public class Security {
                     if(!order.getBroker().hasEnoughCredit(order.getValue())) {
                         return MatchResult.notEnoughCredit();
                     }
-                    order.getBroker().decreaseCreditBy(order.getValue());
                 }
                 return matcher.execute(order);
             }
