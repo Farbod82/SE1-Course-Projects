@@ -231,29 +231,12 @@ public class StopOrderTest {
     @Test
     void test_if_activated_sell_stop_orders_activate_other_buy_stop_orders_correctly(){
 
-        orders = Arrays.asList(
-                new Order(1, security, BUY, 304, 15700, broker, shareholder),
-                new Order(2, security, BUY, 43, 15500, broker, shareholder),
-                new Order(3, security, BUY, 445, 15450, broker, shareholder),
-                new Order(4, security, BUY, 526, 15450, broker, shareholder),
-                new Order(5, security, BUY, 1000, 15400, broker, shareholder),
-                new Order(6, security, SELL, 500, 15800, broker, shareholder),
-                new Order(7, security, SELL, 285, 15810, broker, shareholder),
-                new Order(8, security, SELL, 800, 15810, broker, shareholder),
-                new Order(9, security, SELL, 340, 15820, broker, shareholder),
-                new Order(10, security, SELL, 65, 15820, broker, shareholder)
-        );
 
         Order stopOrder1 = new Order(20,security, BUY,1000,15900,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,15805);
         Order stopOrder2 = new Order(21,security, BUY,1,15900,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,15809);
         Order stopOrder3 = new Order(22,security, BUY,339,15900,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,15815);
 
 
-
-        Order matchingSellOrder1 = orderBook.findByOrderId(SELL,6);
-        Order matchingSellOrder2 = orderBook.findByOrderId(SELL,7);
-        Order matchingSellOrder3 = orderBook.findByOrderId(SELL,8);
-        Order matchingSellOrder4 = orderBook.findByOrderId(SELL,9);
 
 
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 16, LocalDateTime.now(), BUY,
@@ -376,7 +359,7 @@ public class StopOrderTest {
 
         assertThat(broker.getCredit()).isEqualTo(1000_00_000L - 600*600);
         orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(4, "ABC", 22, LocalDateTime.now(), Side.BUY, 700, 600, 0, shareholder.getShareholderId(), 0, 550));
-        assertThat(broker.getCredit()).isEqualTo(1000_00_000L - 600*600);
+        assertThat(broker.getCredit()).isEqualTo(1000_00_000L - 50*600- (700*600));
         verify(eventPublisher).publish(new OrderUpdatedEvent(4, 22));
     }
 
@@ -417,7 +400,7 @@ public class StopOrderTest {
         securityRepository.addSecurity(security);
 
         broker = Broker.builder().credit(100_000_000L).brokerId(0).build();
-        brokerRepository.addBroker(broker1);
+        brokerRepository.addBroker(broker);
 
         shareholder = Shareholder.builder().shareholderId(1).build();
         shareholder.incPosition(security, 100_000_000_0);
@@ -477,7 +460,6 @@ public class StopOrderTest {
         assertThat(broker2.getCredit()).isEqualTo(1);
         verify(eventPublisher).publish(new OrderRejectedEvent(2,20,List.of(Message.BUYER_HAS_NOT_ENOUGH_CREDIT)));
     }
-
 
 
 
