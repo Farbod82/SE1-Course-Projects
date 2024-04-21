@@ -21,8 +21,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 
+import java.lang.reflect.Array;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 import static ir.ramtung.tinyme.domain.entity.Side.BUY;
@@ -95,79 +98,9 @@ public class StopOrderTest {
 
     }
 
-//    @Test
-    void check_sorting_of_activated_sell_order_list(){
-        Broker broker2 = Broker.builder().brokerId(3).credit(20).build();
-        OrderBook orderBook = security.getOrderBook();
-        brokerRepository.addBroker(broker2);
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 11,LocalDateTime.now(), Side.BUY,
-                500, 15805, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
-
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 12, LocalDateTime.now(), SELL,
-                50, 15800, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15799));
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 13, LocalDateTime.now(), SELL,
-                50, 15800, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15797));
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(4, "ABC", 14, LocalDateTime.now(), SELL,
-                50, 15800, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15798));
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(5, "ABC", 15, LocalDateTime.now(), SELL,
-                50, 15800, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 158799));
-
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(6, "ABC", 16,LocalDateTime.now(), SELL,
-                500, 15798, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(7, "ABC", 17,LocalDateTime.now(), Side.BUY,
-                500, 15798, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
 
 
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(8, "ABC", 17,LocalDateTime.now(), Side.BUY,
-                50, 15800, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
-        assertThat(orderBook.findByOrderId(SELL ,13)).isNull();
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(9, "ABC", 18,LocalDateTime.now(), Side.BUY,
-                50, 15800, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
-        assertThat(orderBook.findByOrderId(SELL ,14)).isNull();
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(10, "ABC", 19,LocalDateTime.now(), Side.BUY,
-                50, 15800, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
-        assertThat(orderBook.findByOrderId(SELL ,12)).isNull();
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(11, "ABC", 20,LocalDateTime.now(), Side.BUY,
-                50, 15800, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
-        assertThat(orderBook.findByOrderId(SELL ,15)).isNull();
 
-    }
-
-//    @Test
-    void check_sorting_of_activated_buy_order_list(){
-        Broker broker2 = Broker.builder().brokerId(3).credit(20).build();
-        OrderBook orderBook = security.getOrderBook();
-        brokerRepository.addBroker(broker2);
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 11,LocalDateTime.now(), Side.BUY,
-                500, 15805, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 12, LocalDateTime.now(), Side.BUY,
-                50, 15800, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15808));
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 13, LocalDateTime.now(), Side.BUY,
-                50, 15800, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15807));
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(4, "ABC", 14, LocalDateTime.now(), Side.BUY,
-                50, 15800, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15809));
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(5, "ABC", 15, LocalDateTime.now(), Side.BUY,
-                50, 15800, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15807));
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(6, "ABC", 16,LocalDateTime.now(), SELL,
-                500, 15809, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(7, "ABC", 17,LocalDateTime.now(), Side.BUY,
-                500, 15809, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
-
-
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(8, "ABC", 17,LocalDateTime.now(), SELL,
-                50, 15800, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
-        assertThat(orderBook.findByOrderId(Side.BUY ,14)).isNull();
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(9, "ABC", 18,LocalDateTime.now(), SELL,
-                50, 15800, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
-        assertThat(orderBook.findByOrderId(Side.BUY ,12)).isNull();
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(10, "ABC", 19,LocalDateTime.now(), SELL,
-                50, 15800, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
-        assertThat(orderBook.findByOrderId(Side.BUY ,13)).isNull();
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(11, "ABC", 20,LocalDateTime.now(), SELL,
-                50, 15800, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
-        assertThat(orderBook.findByOrderId(Side.BUY ,15)).isNull();
-
-    }
 
     @Test
     void check_series_of_stop_orders_activate_and_run_correctly() {
@@ -226,8 +159,6 @@ public class StopOrderTest {
         assertThat(security.getStopOrderList().size()).isEqualTo(0);
         verify(eventPublisher).publish(new OrderActivatedEvent(2, 500));
         verify(eventPublisher).publish(new OrderAcceptedEvent(2, 500));
-
-
     }
 
     @Test
