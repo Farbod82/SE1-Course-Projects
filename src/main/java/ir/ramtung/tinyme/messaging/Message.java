@@ -20,5 +20,7 @@ public class Message {
     public static final String PRICE_NOT_MULTIPLE_OF_TICK_SIZE = "Price is not a multiple of security tick size";
     public static final String SELLER_HAS_NOT_ENOUGH_POSITIONS = "Seller has not enough positions";
     public static final String STOP_LIMIT_ORDER_NOT_ACCEPTED = "Stop limit order not passed";
+    public static final String CANNOT_SPECIFY_STOP_LIMIT_PRICE_FOR_A_NON_STOP_LIMIT_ORDER = "Cannot specify stop limit price for a non-stop-limit order";
+    public static final String CANNOT_SPECIFY_STOP_LIMIT_PRICE_FOR_A_ACTIVATED_STOP_LIMIT_ORDER = "Cannot specify stop limit price for a activated stop-limit order";
 
 }
