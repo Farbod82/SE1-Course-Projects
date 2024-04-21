@@ -83,11 +83,38 @@ public class Security {
         orderBook.removeByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
     }
 
+    public Order findByStopOrderId(long orderId) {
+        for (Order order : stopOrderList) {
+            if (order.getOrderId() == orderId)
+                return order;
+        }
+        return null;
+    }
+
+    public MatchResult handleUnactiveStopLimitOrder(EnterOrderRq updateOrderRq, Order order, Order stopOrder){
+        if (updateOrderRq.getSide() == Side.SELL &&
+                !order.getShareholder().hasEnoughPositionsOn(this,
+                        orderBook.totalSellQuantityByShareholder(order.getShareholder()) - order.getQuantity() + updateOrderRq.getQuantity())){
+            return MatchResult.notEnoughPositions();
+        }
+        else{
+            stopOrder.updateFromRequest(updateOrderRq);
+            return MatchResult.executed(null, List.of());
+        }
+    }
+
     public MatchResult updateOrder(EnterOrderRq updateOrderRq, Matcher matcher) throws InvalidRequestException {
 
         Order order = orderBook.findByOrderId(updateOrderRq.getSide(), updateOrderRq.getOrderId());
-        if (order == null)
-            throw new InvalidRequestException(Message.ORDER_ID_NOT_FOUND);
+        if (order == null) {
+            Order stopOrder = findByStopOrderId(updateOrderRq.getOrderId());
+            if(stopOrder == null)
+                throw new InvalidRequestException(Message.ORDER_ID_NOT_FOUND);
+            else {
+                return handleUnactiveStopLimitOrder(updateOrderRq, order, stopOrder);
+            }
+        }
+
         if ((order instanceof IcebergOrder) && updateOrderRq.getPeakSize() == 0)
             throw new InvalidRequestException(Message.INVALID_PEAK_SIZE);
         if (!(order instanceof IcebergOrder) && updateOrderRq.getPeakSize() != 0)
@@ -99,10 +126,6 @@ public class Security {
             if(order.isActive)
                 throw new InvalidRequestException(Message.CANNOT_SPECIFY_STOP_LIMIT_PRICE_FOR_A_ACTIVATED_STOP_LIMIT_ORDER);
         }
-
-        if(order.getStopPrice() != 0 && updateOrderRq.getPeakSize()!=0)
-            throw new InvalidRequestException(Message.CANNOT_CHANGE_PEAK_SIZE_FOR_STOP_LIMIT_ORDER);
-
 
         if (updateOrderRq.getSide() == Side.SELL &&
                 !order.getShareholder().hasEnoughPositionsOn(this,
