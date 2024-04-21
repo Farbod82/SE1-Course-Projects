@@ -132,7 +132,7 @@ public class StopOrderTest {
 
 
     @Test
-    void test_sell_limit_order_price_less_than_activated_price_and_change_lastprice(){
+    void test_sell_limit_order_price_less_than_activated_price_and_change_last_price(){
         Broker broker2 = Broker.builder().brokerId(3).credit(100_000_000L).build();
         brokerRepository.addBroker(broker2);
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 600, LocalDateTime.now(), SELL, 300, 15700, broker2.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
