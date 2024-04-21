@@ -15,6 +15,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static ir.ramtung.tinyme.domain.entity.Side.BUY;
+
 @Getter
 @Builder
 public class Security {
@@ -53,13 +55,25 @@ public class Security {
 
             order = new Order(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
                     enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder, enterOrderRq.getEntryTime(), OrderStatus.NEW, enterOrderRq.getMinimumExecutionQuantity(),false, enterOrderRq.getStopPrice());
-            if ((order.getStopPrice() <= latestPrice && enterOrderRq.getSide() == Side.BUY) || (order.getStopPrice() >= latestPrice && enterOrderRq.getSide() == Side.SELL)){
+            if ((order.getStopPrice() <= latestPrice && enterOrderRq.getSide() == BUY) || (order.getStopPrice() >= latestPrice && enterOrderRq.getSide() == Side.SELL)){
                 order.isActive = true;
+                if(order.getSide() == BUY){
+                    if(!order.getBroker().hasEnoughCredit(order.getValue())) {
+                        return MatchResult.notEnoughCredit();
+                    }
+                    order.getBroker().decreaseCreditBy(order.getValue());
+                }
                 return matcher.execute(order);
             }
             else{
                 stopOrderList.add(order);
                 requestIDs.put(order.getOrderId(),enterOrderRq);
+                if(order.getSide() == BUY){
+                     if(!order.getBroker().hasEnoughCredit(order.getValue())) {
+                        return MatchResult.notEnoughCredit();
+                    }
+                    order.getBroker().decreaseCreditBy(order.getValue());
+                }
                 return  MatchResult.stopLimitAccepted();
             }
         }
@@ -76,9 +90,20 @@ public class Security {
 
     public void deleteOrder(DeleteOrderRq deleteOrderRq) throws InvalidRequestException {
         Order order = orderBook.findByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
-        if (order == null)
-            throw new InvalidRequestException(Message.ORDER_ID_NOT_FOUND);
-        if (order.getSide() == Side.BUY)
+        if (order == null) {
+            Order unactivatedStopOrder = findByStopOrderId(deleteOrderRq.getOrderId());
+            if(unactivatedStopOrder == null) {
+                throw new InvalidRequestException(Message.ORDER_ID_NOT_FOUND);
+            }
+            else{
+                stopOrderList.remove(unactivatedStopOrder);
+                if(unactivatedStopOrder.getSide() == BUY){
+                    unactivatedStopOrder.getBroker().increaseCreditBy(unactivatedStopOrder.getValue());
+                }
+                return;
+            }
+        }
+        if (order.getSide() == BUY)
             order.getBroker().increaseCreditBy(order.getValue());
         orderBook.removeByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
     }
@@ -98,13 +123,19 @@ public class Security {
             return MatchResult.notEnoughPositions();
         }
         else{
+            if(order.getSide() == Side.BUY){
+                order.getBroker().increaseCreditBy(order.getValue());
+                if(!order.getBroker().hasEnoughCredit((long) updateOrderRq.getPrice() *updateOrderRq.getQuantity())) {
+                    return MatchResult.notEnoughCredit();
+                }
+                order.getBroker().decreaseCreditBy((long) updateOrderRq.getPrice() *updateOrderRq.getQuantity());
+            }
             stopOrder.updateFromRequest(updateOrderRq);
             return MatchResult.executed(null, List.of());
         }
     }
 
     public MatchResult updateOrder(EnterOrderRq updateOrderRq, Matcher matcher) throws InvalidRequestException {
-
         Order order = orderBook.findByOrderId(updateOrderRq.getSide(), updateOrderRq.getOrderId());
         if (order == null) {
             Order stopOrder = findByStopOrderId(updateOrderRq.getOrderId());
@@ -136,13 +167,13 @@ public class Security {
                 || updateOrderRq.getPrice() != order.getPrice()
                 || ((order instanceof IcebergOrder icebergOrder) && (icebergOrder.getPeakSize() < updateOrderRq.getPeakSize()));
 
-        if (updateOrderRq.getSide() == Side.BUY) {
+        if (updateOrderRq.getSide() == BUY) {
             order.getBroker().increaseCreditBy(order.getValue());
         }
         Order originalOrder = order.snapshot();
         order.updateFromRequest(updateOrderRq);
         if (!losesPriority) {
-            if (updateOrderRq.getSide() == Side.BUY) {
+            if (updateOrderRq.getSide() == BUY) {
                 order.getBroker().decreaseCreditBy(order.getValue());
             }
             return MatchResult.executed(null, List.of());
@@ -154,7 +185,7 @@ public class Security {
         MatchResult matchResult = matcher.execute(order);
         if (matchResult.outcome() != MatchingOutcome.EXECUTED) {
             orderBook.enqueue(originalOrder);
-            if (updateOrderRq.getSide() == Side.BUY) {
+            if (updateOrderRq.getSide() == BUY) {
                 originalOrder.getBroker().decreaseCreditBy(originalOrder.getValue());
             }
         }
@@ -166,7 +197,7 @@ public class Security {
     }
     private boolean mustBeActivated(Order order){
         if(!order.isActive() &&
-                ((order.getStopPrice() <= latestPrice && order.getSide() == Side.BUY)
+                ((order.getStopPrice() <= latestPrice && order.getSide() == BUY)
                 || (order.getStopPrice() >= latestPrice && order.getSide() == Side.SELL)))
             return true;
         return false;
@@ -189,7 +220,7 @@ public class Security {
         }
         if (!sortedActiveOrders.isEmpty()) {
             Side side = sortedActiveOrders.get(0).getSide();
-            if (side == Side.BUY)
+            if (side == BUY)
                 sortedActiveOrders.sort(Order.buyPriceComparator);
             else
                 sortedActiveOrders.sort(Order.sellPriceComparator);
@@ -207,6 +238,9 @@ public class Security {
             return MatchResult.notEnoughPositions();
         }
         else {
+            if(order.isActive() && order.getSide() == Side.BUY){
+                order.getBroker().increaseCreditBy(order.getValue());
+            }
             return matcher.execute(order);
         }
     }
