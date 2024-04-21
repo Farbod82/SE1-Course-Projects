@@ -599,7 +599,7 @@ public class OrderHandlerTest {
     }
 
     @Test
-    void invalid_update_stop_limit_price(){
+    void invalid_update_stop_limit_price_because_is_actived_stop_order_or_is_not_stop_order(){
         Broker broker4 = Broker.builder().brokerId(10).credit(100_000_000).build();
         brokerRepository.addBroker(broker4);
 
@@ -616,10 +616,20 @@ public class OrderHandlerTest {
         orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(4, "ABC", 21, LocalDateTime.now(), Side.BUY, 1600, 700, 10, shareholder.getShareholderId(), 0, 12));
         verify(eventPublisher).publish(new OrderRejectedEvent(4, 21, List.of(Message.CANNOT_SPECIFY_STOP_LIMIT_PRICE_FOR_A_NON_STOP_LIMIT_ORDER)));
 
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(5, "ABC", 22, LocalDateTime.now(), Side.BUY, 1600, 700, 10, shareholder.getShareholderId(), 5, 0,0));
-        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(6, "ABC", 22, LocalDateTime.now(), Side.BUY, 1600, 700, 10, shareholder.getShareholderId(), 5, 12));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(5, "ABC", 22, LocalDateTime.now(), Side.BUY, 1600, 700, 10, shareholder.getShareholderId(), 700, 0,0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(6, "ABC", 22, LocalDateTime.now(), Side.BUY, 1600, 700, 10, shareholder.getShareholderId(), 650, 12));
         verify(eventPublisher).publish(new OrderRejectedEvent(6, 22, List.of(Message.CANNOT_SPECIFY_STOP_LIMIT_PRICE_FOR_A_NON_STOP_LIMIT_ORDER)));
+    }
 
+    @Test
+    void invalid_update_stop_limit_price_because_want_to_change_peak_size(){
+        List<Order> orders = Arrays.asList(
+                new Order(1, security, Side.BUY, 500, 570, broker3, shareholder)
+        );
+        orders.forEach(order -> security.getOrderBook().enqueue(order));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, LocalDateTime.now(), Side.SELL, 600, 500, 1, shareholder.getShareholderId(), 0, 0,12));
+        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(2, "ABC", 20, LocalDateTime.now(), Side.SELL, 600, 500, 1, shareholder.getShareholderId(), 5, 12));
+        verify(eventPublisher).publish(new OrderRejectedEvent(2, 20, List.of(Message.CANNOT_SPECIFY_PEAK_SIZE_FOR_A_NON_ICEBERG_ORDER)));
     }
 
 }
