@@ -61,8 +61,8 @@ public class OrderHandlerTest {
         shareholder.incPosition(security, 100_000);
         shareholderRepository.addShareholder(shareholder);
 
-        broker1 = Broker.builder().brokerId(1).build();
-        broker2 = Broker.builder().brokerId(2).build();
+        broker1 = Broker.builder().brokerId(1).credit(100_000_000).build();
+        broker2 = Broker.builder().brokerId(2).credit(100_000_000).build();
         broker3 = Broker.builder().brokerId(2).build();
         brokerRepository.addBroker(broker1);
         brokerRepository.addBroker(broker2);
@@ -632,4 +632,18 @@ public class OrderHandlerTest {
         verify(eventPublisher).publish(new OrderRejectedEvent(2, 20, List.of(Message.CANNOT_SPECIFY_PEAK_SIZE_FOR_A_NON_ICEBERG_ORDER)));
     }
 
+    @Test
+    void update_actived_stop_limit_order_done_successfully (){
+        List<Order> orders = Arrays.asList(
+                new Order(1, security, Side.BUY, 500, 570, broker3, shareholder)
+        );
+        orders.forEach(order -> security.getOrderBook().enqueue(order));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, LocalDateTime.now(), Side.BUY, 600, 600, 1, shareholder.getShareholderId(), 0, 0,0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 21, LocalDateTime.now(), Side.SELL, 600, 600, 2, shareholder.getShareholderId(), 0, 0,0));
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 22, LocalDateTime.now(), Side.BUY, 600, 600, 1, shareholder.getShareholderId(), 0, 0,550));
+        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(4, "ABC", 22, LocalDateTime.now(), Side.BUY, 700, 600, 1, shareholder.getShareholderId(), 0, 550));
+
+        verify(eventPublisher).publish(new OrderUpdatedEvent(4, 22));
+    }
 }
