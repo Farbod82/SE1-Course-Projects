@@ -252,10 +252,10 @@ public class StopOrderTest {
 
     @Test
     void test_if_activated_sell_stop_orders_activate_other_sell_stop_orders_correctly(){
-        Order stopOrder1 = new Order(20,security, SELL,285,15815,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,15801);
-        Order stopOrder2 = new Order(21,security, SELL,100,1400,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,15801);
-        Order stopOrder3 = new Order(22,security, SELL,100,1400,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,1000);
-        Order stopOrder4 = new Order(23,security, SELL,100,1400,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,1000);
+        Order stopOrder1 = new Order(20,security, SELL,285,15815,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,15600);
+        Order stopOrder2 = new Order(21,security, SELL,100,15000,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,15600);
+        Order stopOrder3 = new Order(22,security, SELL,100,15000,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,15457);
+        Order stopOrder4 = new Order(23,security, SELL,100,15000,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,15455);
 
         Order matchingBuyOrder1 = orderBook.findByOrderId(BUY,2);
         Order matchingBuyOrder2 = orderBook.findByOrderId(BUY,3);
@@ -273,7 +273,7 @@ public class StopOrderTest {
                 445, 15000, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15600));
 
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(4, "ABC", 22, stopOrder3.getEntryTime(), SELL,
-                526, 15000, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15455));
+                526, 15000, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15457));
 
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(5, "ABC", 23, stopOrder4.getEntryTime(), SELL,
                 2, 15000, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15455));
@@ -298,4 +298,68 @@ public class StopOrderTest {
         Trade trade4 = new Trade(security, 15400,2,stopOrder4,matchingBuyOrder4);
         verify(eventPublisher).publish(new OrderExecutedEvent(5, 23,List.of(new TradeDTO(trade4))));
     }
+    @Test
+    void test_if_activated_sell_stop_orders_activate_other_buy_stop_orders_correctly(){
+
+        orders = Arrays.asList(
+                new Order(1, security, BUY, 304, 15700, broker, shareholder),
+                new Order(2, security, BUY, 43, 15500, broker, shareholder),
+                new Order(3, security, BUY, 445, 15450, broker, shareholder),
+                new Order(4, security, BUY, 526, 15450, broker, shareholder),
+                new Order(5, security, BUY, 1000, 15400, broker, shareholder),
+                new Order(6, security, SELL, 500, 15800, broker, shareholder),
+                new Order(7, security, SELL, 285, 15810, broker, shareholder),
+                new Order(8, security, SELL, 800, 15810, broker, shareholder),
+                new Order(9, security, SELL, 340, 15820, broker, shareholder),
+                new Order(10, security, SELL, 65, 15820, broker, shareholder)
+        );
+
+        Order stopOrder1 = new Order(20,security, BUY,285,15815,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,15801);
+        Order stopOrder2 = new Order(21,security, BUY,100,1400,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,15801);
+        Order stopOrder3 = new Order(22,security, BUY,100,1400,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,1000);
+        Order stopOrder4 = new Order(23,security, BUY,100,1400,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,1000);
+
+        Order matchingBuyOrder1 = orderBook.findByOrderId(BUY,2);
+        Order matchingBuyOrder2 = orderBook.findByOrderId(BUY,3);
+        Order matchingBuyOrder3 = orderBook.findByOrderId(BUY,4);
+        Order matchingBuyOrder4 = orderBook.findByOrderId(BUY,5);
+
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 16, LocalDateTime.now(), BUY,
+                304, 15000, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 20, stopOrder1.getEntryTime(), SELL,
+                40, 15500, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15600));
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 21, stopOrder2.getEntryTime(), SELL,
+                445, 15000, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15600));
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(4, "ABC", 22, stopOrder3.getEntryTime(), SELL,
+                526, 15000, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15457));
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(5, "ABC", 23, stopOrder4.getEntryTime(), SELL,
+                2, 15000, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15455));
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(6, "ABC", 17, LocalDateTime.now(), SELL,
+                3, 15000, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+
+        verify(eventPublisher).publish(new OrderActivatedEvent(2, 20));
+        verify(eventPublisher).publish(new OrderActivatedEvent(3, 21));
+        verify(eventPublisher).publish(new OrderAcceptedEvent(4, 22));
+        verify(eventPublisher).publish(new OrderActivatedEvent(5, 23));
+
+        Trade trade1 = new Trade(security, 15500,40,stopOrder1,matchingBuyOrder1);
+        verify(eventPublisher).publish(new OrderExecutedEvent(2, 20,List.of(new TradeDTO(trade1))));
+
+        Trade trade2 = new Trade(security, 15450,445,stopOrder2,matchingBuyOrder2);
+        verify(eventPublisher).publish(new OrderExecutedEvent(3, 21,List.of(new TradeDTO(trade2))));
+
+        Trade trade3 = new Trade(security, 15450,526,stopOrder3,matchingBuyOrder3);
+        verify(eventPublisher).publish(new OrderExecutedEvent(4, 22,List.of(new TradeDTO(trade3))));
+
+        Trade trade4 = new Trade(security, 15400,2,stopOrder4,matchingBuyOrder4);
+        verify(eventPublisher).publish(new OrderExecutedEvent(5, 23,List.of(new TradeDTO(trade4))));
+    }
+
+
 }

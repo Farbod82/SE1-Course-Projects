@@ -93,10 +93,10 @@ public class Order {
         this.minimumExecutionQuantity = minimumExecutionQuantity;
     }
 
-    static Comparator<Order> sellPriceComparator = Comparator.comparingDouble(Order::getStopPrice)
+    static Comparator<Order> sellPriceComparator = Comparator.comparingDouble(Order::getStopPrice).reversed()
             .thenComparing(Order::getEntryTime);
 
-    static Comparator<Order> buyPriceComparator = Comparator.comparingDouble(Order::getStopPrice).reversed()
+    static Comparator<Order> buyPriceComparator = Comparator.comparingDouble(Order::getStopPrice)
             .thenComparing(Order::getEntryTime);
 
     public Order snapshot() {
