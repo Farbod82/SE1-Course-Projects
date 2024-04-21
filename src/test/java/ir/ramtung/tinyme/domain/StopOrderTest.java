@@ -420,6 +420,8 @@ public class StopOrderTest {
         verify(eventPublisher).publish(new OrderDeletedEvent(4, 22));
 
         assertThat(broker.getCredit()).isEqualTo(1000_00_000L);
+
+        assertThat(security.getStopOrderList().size()).isEqualTo(0);
     }
 
 
@@ -430,6 +432,7 @@ public class StopOrderTest {
 
         broker = Broker.builder().credit(100_000_000L).brokerId(0).build();
         brokerRepository.addBroker(broker1);
+        brokerRepository.addBroker(broker);
 
         shareholder = Shareholder.builder().shareholderId(1).build();
         shareholder.incPosition(security, 100_000_000_0);
@@ -445,11 +448,11 @@ public class StopOrderTest {
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, LocalDateTime.now(), Side.BUY, 600, 600, 1, shareholder.getShareholderId(), 0, 0,0));
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 21, LocalDateTime.now(), Side.SELL, 600, 600, 1, shareholder.getShareholderId(), 0, 0,0));
 
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 22, LocalDateTime.now(), Side.BUY, 600, 600, 1, shareholder.getShareholderId(), 0, 0,550));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 22, LocalDateTime.now(), Side.BUY, 600, 600, 0, shareholder.getShareholderId(), 0, 0,550));
         orderHandler.handleDeleteOrder(new DeleteOrderRq(4, security.getIsin(), Side.BUY, 22));
         verify(eventPublisher).publish(new OrderDeletedEvent(4, 22));
 
-        assertThat(broker.getCredit()).isEqualTo(1000_00_000L);
+        assertThat(broker.getCredit()).isEqualTo(1000_00_000L - 1500);
     }
 
 
