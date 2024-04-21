@@ -66,14 +66,14 @@ public class Security {
                 return matcher.execute(order);
             }
             else{
-                stopOrderList.add(order);
-                requestIDs.put(order.getOrderId(),enterOrderRq);
                 if(order.getSide() == BUY){
                      if(!order.getBroker().hasEnoughCredit(order.getValue())) {
                         return MatchResult.notEnoughCredit();
                     }
                     order.getBroker().decreaseCreditBy(order.getValue());
                 }
+                stopOrderList.add(order);
+                requestIDs.put(order.getOrderId(),enterOrderRq);
                 return  MatchResult.stopLimitAccepted();
             }
         }

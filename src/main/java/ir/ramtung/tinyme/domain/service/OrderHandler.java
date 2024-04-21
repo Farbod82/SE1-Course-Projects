@@ -93,7 +93,7 @@ public class OrderHandler {
             else
                 matchResult = security.updateOrder(enterOrderRq, matcher);
 
-            if(enterOrderRq.getStopPrice() > 0 && matchResult.outcome() != MatchingOutcome.STOP_LIMIT_ORDER_ACCEPTED){
+            if(enterOrderRq.getStopPrice() > 0 && matchResult.outcome() != MatchingOutcome.STOP_LIMIT_ORDER_ACCEPTED && matchResult.outcome() != MatchingOutcome.NOT_ENOUGH_CREDIT){
                 eventPublisher.publish(new OrderActivatedEvent(enterOrderRq.getRequestId(),enterOrderRq.getOrderId()));
                 eventPublisher.publish(new OrderAcceptedEvent(enterOrderRq.getRequestId(),enterOrderRq.getOrderId()));
             }

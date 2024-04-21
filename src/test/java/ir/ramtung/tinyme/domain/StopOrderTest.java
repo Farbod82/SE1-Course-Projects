@@ -166,15 +166,16 @@ public class StopOrderTest {
 
         assertThat(security.getLatestPrice()).isEqualTo(15700);
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 500, LocalDateTime.now(), Side.BUY, 50, 15810, broker2.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15800));
-        assertThat(security.getStopOrderList().size()).isEqualTo(1);
+        assertThat(security.getStopOrderList().size()).isEqualTo(0);
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 16, LocalDateTime.now(), Side.BUY, 50, 15800, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
 
         assertThat(broker.getCredit()).isEqualTo(1000_00_000L + 50 * 15800);
-        verify(eventPublisher).publish(new OrderActivatedEvent(2, 500));
+        verify(eventPublisher).publish(new OrderRejectedEvent(2, 500,List.of(Message.BUYER_HAS_NOT_ENOUGH_CREDIT)));
         assertThat(broker.getCredit()).isEqualTo(1000_00_000L + 50 * 15800);
         assertThat(broker1.getCredit()).isEqualTo( 1000_00_000+150 * 15700 - 50 * 15800);
         assertThat(security.getStopOrderList().size()).isEqualTo(0);
     }
+
 
 
 
