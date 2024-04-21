@@ -418,6 +418,8 @@ public class StopOrderTest {
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 22, LocalDateTime.now(), Side.BUY, 600, 600, 1, shareholder.getShareholderId(), 0, 0,650));
         orderHandler.handleDeleteOrder(new DeleteOrderRq(4, security.getIsin(), Side.BUY, 22));
         verify(eventPublisher).publish(new OrderDeletedEvent(4, 22));
+
+        assertThat(broker.getCredit()).isEqualTo(1000_00_000L);
     }
 
 
@@ -446,6 +448,8 @@ public class StopOrderTest {
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 22, LocalDateTime.now(), Side.BUY, 600, 600, 1, shareholder.getShareholderId(), 0, 0,550));
         orderHandler.handleDeleteOrder(new DeleteOrderRq(4, security.getIsin(), Side.BUY, 22));
         verify(eventPublisher).publish(new OrderDeletedEvent(4, 22));
+
+        assertThat(broker.getCredit()).isEqualTo(1000_00_000L);
     }
 
 
@@ -460,8 +464,5 @@ public class StopOrderTest {
         assertThat(broker2.getCredit()).isEqualTo(1);
         verify(eventPublisher).publish(new OrderRejectedEvent(2,20,List.of(Message.BUYER_HAS_NOT_ENOUGH_CREDIT)));
     }
-
-
-
 
 }
