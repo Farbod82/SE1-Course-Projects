@@ -297,8 +297,5 @@ public class StopOrderTest {
 
         Trade trade4 = new Trade(security, 15400,2,stopOrder4,matchingBuyOrder4);
         verify(eventPublisher).publish(new OrderExecutedEvent(5, 23,List.of(new TradeDTO(trade4))));
-
-
-
     }
 }
