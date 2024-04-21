@@ -142,7 +142,7 @@ public class Security {
             if(stopOrder == null)
                 throw new InvalidRequestException(Message.ORDER_ID_NOT_FOUND);
             else {
-                return handleUnactiveStopLimitOrder(updateOrderRq, order, stopOrder);
+                return handleUnactiveStopLimitOrder(updateOrderRq, stopOrder, stopOrder);
             }
         }
 
