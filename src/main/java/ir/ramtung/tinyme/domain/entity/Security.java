@@ -89,22 +89,22 @@ public class Security {
 
     public void deleteOrder(DeleteOrderRq deleteOrderRq) throws InvalidRequestException {
         Order order = orderBook.findByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
-        if (order == null) {
-            Order unactivatedStopOrder = findStopOrderById(deleteOrderRq.getOrderId());
-            if(unactivatedStopOrder == null) {
-                throw new InvalidRequestException(Message.ORDER_ID_NOT_FOUND);
-            }
-            else{
-                stopOrderList.remove(unactivatedStopOrder);
-                if(unactivatedStopOrder.getSide() == BUY){
-                    unactivatedStopOrder.getBroker().increaseCreditBy(unactivatedStopOrder.getValue());
-                }
-                return;
+        Order unactivatedStopOrder = findStopOrderById(deleteOrderRq.getOrderId());
+
+        if(unactivatedStopOrder != null){
+            stopOrderList.remove(unactivatedStopOrder);
+            if(unactivatedStopOrder.getSide() == BUY){
+                unactivatedStopOrder.getBroker().increaseCreditBy(unactivatedStopOrder.getValue());
             }
         }
-        if (order.getSide() == BUY)
-            order.getBroker().increaseCreditBy(order.getValue());
-        orderBook.removeByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
+        else if (order == null) {
+            throw new InvalidRequestException(Message.ORDER_ID_NOT_FOUND);
+        }
+        else {
+            if (order.getSide() == BUY)
+                order.getBroker().increaseCreditBy(order.getValue());
+            orderBook.removeByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
+        }
     }
 
     public Order findStopOrderById(long orderId) {
