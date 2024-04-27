@@ -196,15 +196,15 @@ public class Security {
         Order originalOrder = order.snapshot();
         order.updateFromRequest(updateOrderRq);
         
-        if (!losesPriority) {
-            return handleOrderHasNotLostPriority(updateOrderRq, order);
+        if (losesPriority) {
+            return handleOrderHasLostItsPriority(updateOrderRq, matcher, order, originalOrder);
         }
         else {
-            return handleOrderHasLostPriority(updateOrderRq, matcher, order, originalOrder);
+            return handleOrderHasNotLostItsPriority(updateOrderRq, order);
         }
     }
 
-    private MatchResult handleOrderHasLostPriority(EnterOrderRq updateOrderRq, Matcher matcher, Order order, Order originalOrder) {
+    private MatchResult handleOrderHasLostItsPriority(EnterOrderRq updateOrderRq, Matcher matcher, Order order, Order originalOrder) {
         order.markAsNew();
         orderBook.removeByOrderId(updateOrderRq.getSide(), updateOrderRq.getOrderId());
         MatchResult matchResult = matcher.execute(order);
@@ -217,7 +217,7 @@ public class Security {
         return matchResult;
     }
 
-    private MatchResult handleOrderHasNotLostPriority(EnterOrderRq updateOrderRq, Order order) {
+    private MatchResult handleOrderHasNotLostItsPriority(EnterOrderRq updateOrderRq, Order order) {
         if (updateOrderRq.getSide() == BUY) {
             order.getBroker().decreaseCreditBy(order.getValue());
         }
