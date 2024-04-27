@@ -121,7 +121,7 @@ public class Security {
         }
         else{
             if(order.getSide() == Side.BUY){
-                long valueOfTrade = updateOrderRq.getPrice() *updateOrderRq.getQuantity();
+                long valueOfTrade = (long) updateOrderRq.getPrice() *updateOrderRq.getQuantity();
                 if(!order.getBroker().hasEnoughCredit(valueOfTrade)) {
                     return MatchResult.notEnoughCredit();
                 }
@@ -134,6 +134,8 @@ public class Security {
     }
 
     public void handleUpdateRequestExceptions(Order order ,EnterOrderRq updateOrderRq) throws InvalidRequestException {
+        if(order == null)
+            throw new InvalidRequestException(Message.ORDER_ID_NOT_FOUND);
         if ((order instanceof IcebergOrder) && updateOrderRq.getPeakSize() == 0)
             throw new InvalidRequestException(Message.INVALID_PEAK_SIZE);
         if (!(order instanceof IcebergOrder) && updateOrderRq.getPeakSize() != 0)
@@ -149,14 +151,11 @@ public class Security {
 
     public MatchResult updateOrder(EnterOrderRq updateOrderRq, Matcher matcher) throws InvalidRequestException {
         Order order = orderBook.findByOrderId(updateOrderRq.getSide(), updateOrderRq.getOrderId());
-        if (order == null) {
-            Order stopOrder = findStopOrderById(updateOrderRq.getOrderId());
-            if(stopOrder == null)
-                throw new InvalidRequestException(Message.ORDER_ID_NOT_FOUND);
-            else {
-                return updateUnactivatedStopLimitOrder(updateOrderRq, stopOrder, stopOrder);
-            }
-        }
+        Order stopOrder = findStopOrderById(updateOrderRq.getOrderId());
+
+        if(stopOrder != null)
+            return updateUnactivatedStopLimitOrder(updateOrderRq, stopOrder, stopOrder);
+
         handleUpdateRequestExceptions(order ,updateOrderRq);
 
         if (sellerShareholderHasNotEnoughPositions(updateOrderRq, order))
