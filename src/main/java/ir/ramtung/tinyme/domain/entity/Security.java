@@ -88,16 +88,20 @@ public class Security {
             return matcher.execute(order);
         }
         else{
-            if(buyerBrokerHasNotEnoughCredit(order)){
-                return MatchResult.notEnoughCredit();
-            }
-            if(order.getSide() == BUY) {
-                order.getBroker().decreaseCreditBy(order.getValue());
-            }
-            stopOrderList.add(order);
-            requestIDs.put(order.getOrderId(), enterOrderRq);
-            return MatchResult.stopLimitAccepted();
+            return handleUnactivatedNewStopLimitOrder(enterOrderRq, order);
         }
+    }
+
+    private MatchResult handleUnactivatedNewStopLimitOrder(EnterOrderRq enterOrderRq, Order order) {
+        if(buyerBrokerHasNotEnoughCredit(order)){
+            return MatchResult.notEnoughCredit();
+        }
+        if(order.getSide() == BUY) {
+            order.getBroker().decreaseCreditBy(order.getValue());
+        }
+        stopOrderList.add(order);
+        requestIDs.put(order.getOrderId(), enterOrderRq);
+        return MatchResult.stopLimitAccepted();
     }
 
     private boolean hasFailedStopLimitOrderCondition(EnterOrderRq enterOrderRq) {
@@ -191,15 +195,17 @@ public class Security {
         }
         Order originalOrder = order.snapshot();
         order.updateFromRequest(updateOrderRq);
+        
         if (!losesPriority) {
-            if (updateOrderRq.getSide() == BUY) {
-                order.getBroker().decreaseCreditBy(order.getValue());
-            }
-            return MatchResult.executed(null, List.of());
+            return handleOrderHasNotLostPriority(updateOrderRq, order);
         }
-        else
-            order.markAsNew();
+        else {
+            return handleOrderHasLostPriority(updateOrderRq, matcher, order, originalOrder);
+        }
+    }
 
+    private MatchResult handleOrderHasLostPriority(EnterOrderRq updateOrderRq, Matcher matcher, Order order, Order originalOrder) {
+        order.markAsNew();
         orderBook.removeByOrderId(updateOrderRq.getSide(), updateOrderRq.getOrderId());
         MatchResult matchResult = matcher.execute(order);
         if (matchResult.outcome() != MatchingOutcome.EXECUTED) {
@@ -209,6 +215,13 @@ public class Security {
             }
         }
         return matchResult;
+    }
+
+    private MatchResult handleOrderHasNotLostPriority(EnterOrderRq updateOrderRq, Order order) {
+        if (updateOrderRq.getSide() == BUY) {
+            order.getBroker().decreaseCreditBy(order.getValue());
+        }
+        return MatchResult.executed(null, List.of());
     }
 
     private boolean sellerShareholderHasNotEnoughPositions(EnterOrderRq updateOrderRq, Order order) {
