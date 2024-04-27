@@ -287,7 +287,7 @@ public class StopOrderTest {
         orderBook = security.getOrderBook();
     }
     @Test
-    void invalid_update_stop_limit_price_because_is_actived_stop_order_or_is_not_stop_order(){
+    void invalid_update_stop_limit_price_because_is_activated_stop_order_or_is_not_stop_order(){
         initial_test();
         List<Order> orders = Arrays.asList(
                 new Order(1, security, Side.BUY, 500, 570, broker, shareholder),
@@ -347,7 +347,7 @@ public class StopOrderTest {
     }
 
     @Test
-    void update_unactive_stop_limit_order_done_successfully (){
+    void update_unactivated_stop_limit_order_done_successfully (){
         initial_test();
         List<Order> orders = Arrays.asList(
                 new Order(1, security, Side.BUY, 500, 570, broker1, shareholder)
@@ -415,6 +415,25 @@ public class StopOrderTest {
         assertThat(security.getStopOrderList().get(0).getPrice()).isEqualTo(15900);
         assertThat(broker2.getCredit()).isEqualTo(1);
         verify(eventPublisher).publish(new OrderRejectedEvent(2,20,List.of(Message.BUYER_HAS_NOT_ENOUGH_CREDIT)));
+    }
+    
+    @Test
+    void check_null_orders_publishing(){
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, LocalDateTime.now(), Side.BUY, 500, 15800, 1, shareholder.getShareholderId(), 0, 0,0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(2,"ABC",6,LocalDateTime.now(), SELL,550,1500,1,shareholder.getShareholderId(),0,0));
+        verify(eventPublisher).publish(new OrderRejectedEvent(2, 6, List.of(Message.ORDER_ID_NOT_FOUND)));
+        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(3,"ABC",20,LocalDateTime.now(), BUY,550,1500,1,shareholder.getShareholderId(),0,0));
+        verify(eventPublisher).publish(new OrderRejectedEvent(3, 20, List.of(Message.ORDER_ID_NOT_FOUND)));
+    }
+
+    @Test
+    void check_null_stop_orders_publishing(){
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, LocalDateTime.now(), Side.BUY, 500, 15800, 1, shareholder.getShareholderId(), 0, 0,0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 21, LocalDateTime.now(), Side.SELL, 304, 15700, 1, shareholder.getShareholderId(), 0, 0,15850));
+        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(2,"ABC",21,LocalDateTime.now(), SELL,550,1500,1,shareholder.getShareholderId(),0,0));
+        verify(eventPublisher).publish(new OrderRejectedEvent(2, 21, List.of(Message.ORDER_ID_NOT_FOUND)));
+        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(3,"ABC",1,LocalDateTime.now(), BUY,550,1500,1,shareholder.getShareholderId(),0,0));
+        verify(eventPublisher).publish(new OrderRejectedEvent(3, 1, List.of(Message.ORDER_ID_NOT_FOUND)));
     }
 
 }
