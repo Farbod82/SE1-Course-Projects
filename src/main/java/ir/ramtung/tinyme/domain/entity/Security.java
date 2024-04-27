@@ -50,31 +50,7 @@ public class Security {
             return MatchResult.notEnoughPositions();
         Order order;
         if (enterOrderRq.getStopPrice() > 0){
-            if(enterOrderRq.getPeakSize() > 0 || enterOrderRq.getMinimumExecutionQuantity() > 0)
-                return MatchResult.stopLimitOrderNotAccepted();
-
-            order = new Order(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
-                    enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder, enterOrderRq.getEntryTime(), OrderStatus.NEW, enterOrderRq.getMinimumExecutionQuantity(),false, enterOrderRq.getStopPrice());
-            if ((order.getStopPrice() <= latestPrice && enterOrderRq.getSide() == BUY) || (order.getStopPrice() >= latestPrice && enterOrderRq.getSide() == Side.SELL)){
-                order.isActive = true;
-                if(order.getSide() == BUY){
-                    if(!order.getBroker().hasEnoughCredit(order.getValue())) {
-                        return MatchResult.notEnoughCredit();
-                    }
-                }
-                return matcher.execute(order);
-            }
-            else{
-                if(order.getSide() == BUY){
-                     if(!order.getBroker().hasEnoughCredit(order.getValue())) {
-                        return MatchResult.notEnoughCredit();
-                    }
-                    order.getBroker().decreaseCreditBy(order.getValue());
-                }
-                stopOrderList.add(order);
-                requestIDs.put(order.getOrderId(),enterOrderRq);
-                return  MatchResult.stopLimitAccepted();
-            }
+            return handleNewStopLimitOrder(enterOrderRq, broker, shareholder, matcher);
         }
         else if (enterOrderRq.getPeakSize() == 0)
             order = new Order(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
@@ -87,6 +63,35 @@ public class Security {
         return matcher.execute(order);
     }
 
+    private MatchResult handleNewStopLimitOrder(EnterOrderRq enterOrderRq, Broker broker, Shareholder shareholder, Matcher matcher) {
+        Order order;
+        if(enterOrderRq.getPeakSize() > 0 || enterOrderRq.getMinimumExecutionQuantity() > 0)
+            return MatchResult.stopLimitOrderNotAccepted();
+
+        order = new Order(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
+                enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder, enterOrderRq.getEntryTime(), OrderStatus.NEW, enterOrderRq.getMinimumExecutionQuantity(),false, enterOrderRq.getStopPrice());
+        if (mustBeActivated(order)){
+            order.isActive = true;
+            if(order.getSide() == BUY){
+                if(!order.getBroker().hasEnoughCredit(order.getValue())) {
+                    return MatchResult.notEnoughCredit();
+                }
+            }
+            return matcher.execute(order);
+        }
+        else{
+            if(order.getSide() == BUY){
+                 if(!order.getBroker().hasEnoughCredit(order.getValue())) {
+                     return MatchResult.notEnoughCredit();
+                }
+                order.getBroker().decreaseCreditBy(order.getValue());
+            }
+            stopOrderList.add(order);
+            requestIDs.put(order.getOrderId(), enterOrderRq);
+            return MatchResult.stopLimitAccepted();
+        }
+    }
+
     public void deleteOrder(DeleteOrderRq deleteOrderRq) throws InvalidRequestException {
         Order order = orderBook.findByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
         Order unactivatedStopOrder = findStopOrderById(deleteOrderRq.getOrderId());
@@ -97,13 +102,13 @@ public class Security {
                 unactivatedStopOrder.getBroker().increaseCreditBy(unactivatedStopOrder.getValue());
             }
         }
-        else if (order == null) {
-            throw new InvalidRequestException(Message.ORDER_ID_NOT_FOUND);
-        }
-        else {
+        else if (order != null) {
             if (order.getSide() == BUY)
                 order.getBroker().increaseCreditBy(order.getValue());
             orderBook.removeByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
+        }
+        else  {
+            throw new InvalidRequestException(Message.ORDER_ID_NOT_FOUND);
         }
     }
 
