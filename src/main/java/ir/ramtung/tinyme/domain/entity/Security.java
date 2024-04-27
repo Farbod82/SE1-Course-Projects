@@ -116,9 +116,7 @@ public class Security {
     }
 
     public MatchResult updateUnactivatedStopLimitOrder(EnterOrderRq updateOrderRq, Order order, Order stopOrder){
-        if (updateOrderRq.getSide() == Side.SELL &&
-                !order.getShareholder().hasEnoughPositionsOn(this,
-                        orderBook.totalSellQuantityByShareholder(order.getShareholder()) - order.getQuantity() + updateOrderRq.getQuantity())){
+        if (sellerShareholderHasNotEnoughPositions(updateOrderRq, order)){
             return MatchResult.notEnoughPositions();
         }
         else{
@@ -159,12 +157,9 @@ public class Security {
                 return updateUnactivatedStopLimitOrder(updateOrderRq, stopOrder, stopOrder);
             }
         }
-
         handleUpdateRequestExceptions(order ,updateOrderRq);
 
-        if (updateOrderRq.getSide() == Side.SELL &&
-                !order.getShareholder().hasEnoughPositionsOn(this,
-                orderBook.totalSellQuantityByShareholder(order.getShareholder()) - order.getQuantity() + updateOrderRq.getQuantity()))
+        if (sellerShareholderHasNotEnoughPositions(updateOrderRq, order))
             return MatchResult.notEnoughPositions();
 
         boolean losesPriority = order.isQuantityIncreased(updateOrderRq.getQuantity())
@@ -195,6 +190,13 @@ public class Security {
         }
         return matchResult;
     }
+
+    private boolean sellerShareholderHasNotEnoughPositions(EnterOrderRq updateOrderRq, Order order) {
+        return updateOrderRq.getSide() == Side.SELL &&
+                !order.getShareholder().hasEnoughPositionsOn(this,
+                        orderBook.totalSellQuantityByShareholder(order.getShareholder()) - order.getQuantity() + updateOrderRq.getQuantity());
+    }
+
     private void deleteActivatedOrder(){
         Stream<Order> mustBeDelete =  stopOrderList.stream().filter(Order::isActive);
         stopOrderList.removeAll(mustBeDelete.toList());
