@@ -90,7 +90,7 @@ public class Security {
     public void deleteOrder(DeleteOrderRq deleteOrderRq) throws InvalidRequestException {
         Order order = orderBook.findByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
         if (order == null) {
-            Order unactivatedStopOrder = findByStopOrderId(deleteOrderRq.getOrderId());
+            Order unactivatedStopOrder = findStopOrderById(deleteOrderRq.getOrderId());
             if(unactivatedStopOrder == null) {
                 throw new InvalidRequestException(Message.ORDER_ID_NOT_FOUND);
             }
@@ -107,7 +107,7 @@ public class Security {
         orderBook.removeByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
     }
 
-    public Order findByStopOrderId(long orderId) {
+    public Order findStopOrderById(long orderId) {
         for (Order order : stopOrderList) {
             if (order.getOrderId() == orderId)
                 return order;
@@ -115,7 +115,7 @@ public class Security {
         return null;
     }
 
-    public MatchResult handleUnactiveStopLimitOrder(EnterOrderRq updateOrderRq, Order order, Order stopOrder){
+    public MatchResult updateUnactivatedStopLimitOrder(EnterOrderRq updateOrderRq, Order order, Order stopOrder){
         if (updateOrderRq.getSide() == Side.SELL &&
                 !order.getShareholder().hasEnoughPositionsOn(this,
                         orderBook.totalSellQuantityByShareholder(order.getShareholder()) - order.getQuantity() + updateOrderRq.getQuantity())){
@@ -123,29 +123,19 @@ public class Security {
         }
         else{
             if(order.getSide() == Side.BUY){
-
-                if(!order.getBroker().hasEnoughCredit((long) updateOrderRq.getPrice() *updateOrderRq.getQuantity())) {
+                long valueOfTrade = updateOrderRq.getPrice() *updateOrderRq.getQuantity();
+                if(!order.getBroker().hasEnoughCredit(valueOfTrade)) {
                     return MatchResult.notEnoughCredit();
                 }
                 order.getBroker().increaseCreditBy(order.getValue());
-                order.getBroker().decreaseCreditBy((long) updateOrderRq.getPrice() *updateOrderRq.getQuantity());
+                order.getBroker().decreaseCreditBy(valueOfTrade);
             }
             stopOrder.updateFromRequest(updateOrderRq);
             return MatchResult.executed(null, List.of());
         }
     }
 
-    public MatchResult updateOrder(EnterOrderRq updateOrderRq, Matcher matcher) throws InvalidRequestException {
-        Order order = orderBook.findByOrderId(updateOrderRq.getSide(), updateOrderRq.getOrderId());
-        if (order == null) {
-            Order stopOrder = findByStopOrderId(updateOrderRq.getOrderId());
-            if(stopOrder == null)
-                throw new InvalidRequestException(Message.ORDER_ID_NOT_FOUND);
-            else {
-                return handleUnactiveStopLimitOrder(updateOrderRq, stopOrder, stopOrder);
-            }
-        }
-
+    public void handleUpdateRequestExceptions(Order order ,EnterOrderRq updateOrderRq) throws InvalidRequestException {
         if ((order instanceof IcebergOrder) && updateOrderRq.getPeakSize() == 0)
             throw new InvalidRequestException(Message.INVALID_PEAK_SIZE);
         if (!(order instanceof IcebergOrder) && updateOrderRq.getPeakSize() != 0)
@@ -157,6 +147,20 @@ public class Security {
             if(order.isActive)
                 throw new InvalidRequestException(Message.CANNOT_SPECIFY_STOP_LIMIT_PRICE_FOR_A_ACTIVATED_STOP_LIMIT_ORDER);
         }
+    }
+
+    public MatchResult updateOrder(EnterOrderRq updateOrderRq, Matcher matcher) throws InvalidRequestException {
+        Order order = orderBook.findByOrderId(updateOrderRq.getSide(), updateOrderRq.getOrderId());
+        if (order == null) {
+            Order stopOrder = findStopOrderById(updateOrderRq.getOrderId());
+            if(stopOrder == null)
+                throw new InvalidRequestException(Message.ORDER_ID_NOT_FOUND);
+            else {
+                return updateUnactivatedStopLimitOrder(updateOrderRq, stopOrder, stopOrder);
+            }
+        }
+
+        handleUpdateRequestExceptions(order ,updateOrderRq);
 
         if (updateOrderRq.getSide() == Side.SELL &&
                 !order.getShareholder().hasEnoughPositionsOn(this,
