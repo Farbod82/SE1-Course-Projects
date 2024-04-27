@@ -48,48 +48,64 @@ public class Security {
                 !shareholder.hasEnoughPositionsOn(this,
                 orderBook.totalSellQuantityByShareholder(shareholder) + enterOrderRq.getQuantity()))
             return MatchResult.notEnoughPositions();
+        
         Order order;
-        if (enterOrderRq.getStopPrice() > 0){
+        if (isStopLimitOrder(enterOrderRq)){
             return handleNewStopLimitOrder(enterOrderRq, broker, shareholder, matcher);
         }
-        else if (enterOrderRq.getPeakSize() == 0)
+        else if(isIcebergOrder(enterOrderRq)){
+            order = new IcebergOrder(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
+            enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder,
+            enterOrderRq.getEntryTime(), enterOrderRq.getPeakSize());
+        }
+        else{
             order = new Order(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
                     enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder, enterOrderRq.getEntryTime(), OrderStatus.NEW, enterOrderRq.getMinimumExecutionQuantity());
-        else
-            order = new IcebergOrder(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
-                    enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder,
-                    enterOrderRq.getEntryTime(), enterOrderRq.getPeakSize());
-
+        }
         return matcher.execute(order);
+    }
+
+    private boolean isStopLimitOrder(EnterOrderRq enterOrderRq) {
+        return enterOrderRq.getStopPrice() > 0;
+    }
+
+    private boolean isIcebergOrder(EnterOrderRq enterOrderRq) {
+        return enterOrderRq.getPeakSize() > 0;
     }
 
     private MatchResult handleNewStopLimitOrder(EnterOrderRq enterOrderRq, Broker broker, Shareholder shareholder, Matcher matcher) {
         Order order;
-        if(enterOrderRq.getPeakSize() > 0 || enterOrderRq.getMinimumExecutionQuantity() > 0)
+        if(hasFailedStopLimitOrderCondition(enterOrderRq))
             return MatchResult.stopLimitOrderNotAccepted();
 
         order = new Order(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
                 enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder, enterOrderRq.getEntryTime(), OrderStatus.NEW, enterOrderRq.getMinimumExecutionQuantity(),false, enterOrderRq.getStopPrice());
         if (mustBeActivated(order)){
             order.isActive = true;
-            if(order.getSide() == BUY){
-                if(!order.getBroker().hasEnoughCredit(order.getValue())) {
+            if(buyerBrokerHasNotEnoughCredit(order)){
                     return MatchResult.notEnoughCredit();
-                }
             }
             return matcher.execute(order);
         }
         else{
-            if(order.getSide() == BUY){
-                 if(!order.getBroker().hasEnoughCredit(order.getValue())) {
-                     return MatchResult.notEnoughCredit();
-                }
+            if(buyerBrokerHasNotEnoughCredit(order)){
+                return MatchResult.notEnoughCredit();
+            }
+            if(order.getSide() == BUY) {
                 order.getBroker().decreaseCreditBy(order.getValue());
             }
             stopOrderList.add(order);
             requestIDs.put(order.getOrderId(), enterOrderRq);
             return MatchResult.stopLimitAccepted();
         }
+    }
+
+    private boolean hasFailedStopLimitOrderCondition(EnterOrderRq enterOrderRq) {
+        return enterOrderRq.getPeakSize() > 0 || enterOrderRq.getMinimumExecutionQuantity() > 0;
+    }
+
+    private boolean buyerBrokerHasNotEnoughCredit(Order order) {
+        return order.getSide() == BUY && !order.getBroker().hasEnoughCredit(order.getValue());
     }
 
     public void deleteOrder(DeleteOrderRq deleteOrderRq) throws InvalidRequestException {
