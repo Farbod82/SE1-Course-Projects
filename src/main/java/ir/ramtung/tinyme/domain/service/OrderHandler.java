@@ -87,31 +87,43 @@ public class OrderHandler {
             Broker broker = brokerRepository.findBrokerById(enterOrderRq.getBrokerId());
             Shareholder shareholder = shareholderRepository.findShareholderById(enterOrderRq.getShareholderId());
 
-            MatchResult matchResult;
-            if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER)
-                matchResult = security.newOrder(enterOrderRq, broker, shareholder, matcher);
-            else
-                matchResult = security.updateOrder(enterOrderRq, matcher);
+            MatchResult matchResult = setOrderRequestType(enterOrderRq, security, broker, shareholder);
 
-            if(enterOrderRq.getStopPrice() > 0 && matchResult.outcome() != MatchingOutcome.STOP_LIMIT_ORDER_ACCEPTED && matchResult.outcome() != MatchingOutcome.NOT_ENOUGH_CREDIT){
+            if(allowPublishingActivatedStopLimit(enterOrderRq, matchResult)){
                 eventPublisher.publish(new OrderActivatedEvent(enterOrderRq.getRequestId(),enterOrderRq.getOrderId()));
                 eventPublisher.publish(new OrderAcceptedEvent(enterOrderRq.getRequestId(),enterOrderRq.getOrderId()));
             }
 
             publishMatchOutComes(matchResult,enterOrderRq);
-
-
-            findActivatedStopOrders(security);
-            while(security.hasAnyActiveStopOrder()){
-                matchResult = security.runSingleStopOrder(matcher);
-                EnterOrderRq stopOrderEnterOrderRq = security.getLastProcessedReqID();
-                publishMatchOutComes(matchResult,stopOrderEnterOrderRq);
-                findActivatedStopOrders(security);
-            }
+            checkAllActivatedStopLimitOrders(security);
 
         } catch (InvalidRequestException ex) {
             eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), ex.getReasons()));
         }
+    }
+
+    private MatchResult setOrderRequestType(EnterOrderRq enterOrderRq, Security security, Broker broker, Shareholder shareholder) throws InvalidRequestException {
+        MatchResult matchResult;
+        if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER)
+            matchResult = security.newOrder(enterOrderRq, broker, shareholder, matcher);
+        else
+            matchResult = security.updateOrder(enterOrderRq, matcher);
+        return matchResult;
+    }
+
+    private void checkAllActivatedStopLimitOrders(Security security) {
+        MatchResult matchResult;
+        findActivatedStopOrders(security);
+        while(security.hasAnyActiveStopOrder()){
+            matchResult = security.runSingleStopOrder(matcher);
+            EnterOrderRq stopOrderEnterOrderRq = security.getLastProcessedReqID();
+            publishMatchOutComes(matchResult,stopOrderEnterOrderRq);
+            findActivatedStopOrders(security);
+        }
+    }
+
+    private boolean allowPublishingActivatedStopLimit(EnterOrderRq enterOrderRq, MatchResult matchResult) {
+        return enterOrderRq.getStopPrice() > 0 && matchResult.outcome() != MatchingOutcome.STOP_LIMIT_ORDER_ACCEPTED && matchResult.outcome() != MatchingOutcome.NOT_ENOUGH_CREDIT;
     }
 
     public void handleDeleteOrder(DeleteOrderRq deleteOrderRq) {
