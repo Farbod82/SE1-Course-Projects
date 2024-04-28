@@ -414,7 +414,7 @@ public class StopOrderTest {
         assertThat(broker2.getCredit()).isEqualTo(1);
         verify(eventPublisher).publish(new OrderRejectedEvent(2,20,List.of(Message.BUYER_HAS_NOT_ENOUGH_CREDIT)));
     }
-    
+
     @Test
     void check_null_orders_publishing(){
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, LocalDateTime.now(), Side.BUY, 500, 15800, 1, shareholder.getShareholderId(), 0, 0,0));
@@ -471,5 +471,23 @@ public class StopOrderTest {
         verify(eventPublisher).publish(new OrderActivatedEvent(2, 500));
         verify(eventPublisher).publish(new OrderActivatedEvent(3, 700));
     }
+    @Test
+    void check_if_passing_stop_order_limit_in_sell_order_while_updating_works_correct() {
+        initial_test();
+        Order order1 = new Order(20, security, BUY, 200, 700, broker1, shareholder, LocalDateTime.now(), OrderStatus.NEW, 0, false, 0);
+        Order order2 = new Order(21, security, SELL, 100, 550, broker1, shareholder, LocalDateTime.now(), OrderStatus.NEW, 0, false, 0);
+        Order order3 = new Order(22, security, BUY, 100, 600, broker1, shareholder, LocalDateTime.now(), OrderStatus.NEW, 0, false, 0);
+        Order stopOrder = new Order(23, security, SELL, 200, 670, broker1, shareholder, LocalDateTime.now(), OrderStatus.NEW, 0, false, 500);
+
+        List<Order> orders = Arrays.asList(
+                order1, order2
+        );
+        orders.forEach(order -> security.getOrderBook().enqueue(order));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1,"ABC",22, order3.getEntryTime(), Side.BUY, 100, 550, 1, shareholder.getShareholderId(), 0, 0,0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2,"ABC",23, stopOrder.getEntryTime(), SELL, 200, 670, 1, shareholder.getShareholderId(), 0, 0,500));
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(3,"ABC",23,LocalDateTime.now(), SELL,200,640,1,shareholder.getShareholderId(),0,600));
+    }
+
 
 }
