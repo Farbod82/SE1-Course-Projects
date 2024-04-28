@@ -471,6 +471,7 @@ public class StopOrderTest {
         verify(eventPublisher).publish(new OrderActivatedEvent(2, 500));
         verify(eventPublisher).publish(new OrderActivatedEvent(3, 700));
     }
+
     @Test
     void check_if_passing_stop_order_limit_in_sell_order_while_updating_works_correct() {
         initial_test();
@@ -487,6 +488,12 @@ public class StopOrderTest {
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2,"ABC",23, stopOrder.getEntryTime(), SELL, 200, 670, 1, shareholder.getShareholderId(), 0, 0,500));
 
         orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(3,"ABC",23,LocalDateTime.now(), SELL,200,640,1,shareholder.getShareholderId(),0,600));
+
+        Trade trade3 = new Trade(security, 550,100, order2, order3);
+        verify(eventPublisher).publish(new OrderExecutedEvent(1, 22,List.of(new TradeDTO(trade3))));
+
+        Trade trade4 = new Trade(security, 640,200,order1,stopOrder);
+        verify(eventPublisher).publish(new OrderExecutedEvent(3, 23,List.of(new TradeDTO(trade4))));
     }
 
 
