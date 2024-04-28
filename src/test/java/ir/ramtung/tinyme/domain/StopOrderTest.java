@@ -158,7 +158,7 @@ public class StopOrderTest {
     }
 
     @Test
-    void test_buy_limit_order_activated_but_rollback_for_not_enugh_money(){
+    void test_buy_limit_order_activated_but_rollback_for_not_enough_money(){
         Broker broker2 = Broker.builder().brokerId(3).credit(20).build();
         brokerRepository.addBroker(broker2);
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 600, LocalDateTime.now(), SELL, 150, 15700, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
