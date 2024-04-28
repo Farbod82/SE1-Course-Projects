@@ -448,13 +448,13 @@ public class StopOrderTest {
         verify(eventPublisher,times(1)).publish(new OrderActivatedEvent(2, 20));
         verify(eventPublisher,times(1)).publish(new OrderUpdatedEvent(3, 20));
         Trade trade1 = new Trade(security, 15800,500,stopOrder1,matchingBuyOrder1);
-        verify(eventPublisher).publish(new OrderExecutedEvent(3, 20,List.of(new TradeDTO(trade1))));
+        verify(eventPublisher).publish(new OrderExecutedEvent(2, 20,List.of(new TradeDTO(trade1))));
 
 
     }
 
     @Test
-    void test_update_unactivated_stop_order_active_it_and_active_other(){
+    void test_update_unactivated_stop_order_actives_it_and_also_actives_other_correctly(){
         Broker broker2 = Broker.builder().brokerId(3).credit(100_000_000L).build();
         brokerRepository.addBroker(broker2);
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 600, LocalDateTime.now(), SELL, 300, 15700, broker2.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));

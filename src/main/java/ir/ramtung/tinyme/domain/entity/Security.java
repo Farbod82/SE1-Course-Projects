@@ -160,16 +160,10 @@ public class Security {
                     return MatchResult.notEnoughCredit();
                 }
                 stopOrder.getBroker().increaseCreditBy(stopOrder.getValue());
+                stopOrder.getBroker().decreaseCreditBy((long) updateOrderRq.getPrice() *updateOrderRq.getQuantity());
             }
             stopOrder.updateFromRequest(updateOrderRq);
-            if (mustBeActivated(stopOrder)){
-
-                return matcher.execute(stopOrder);
-            }
-            else {
-                stopOrder.getBroker().decreaseCreditBy((long) updateOrderRq.getPrice() *updateOrderRq.getQuantity());
-                return MatchResult.executed(null, List.of());
-            }
+            return MatchResult.executed(null, List.of());
         }
     }
 
