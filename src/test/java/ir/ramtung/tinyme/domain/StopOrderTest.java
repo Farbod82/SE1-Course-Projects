@@ -453,4 +453,25 @@ public class StopOrderTest {
 
     }
 
+    @Test
+    void test_update_unactivated_stop_order_active_it_and_active_other(){
+        Broker broker2 = Broker.builder().brokerId(3).credit(100_000_000L).build();
+        brokerRepository.addBroker(broker2);
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 600, LocalDateTime.now(), SELL, 300, 15700, broker2.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+        assertThat(broker2.getCredit()).isEqualTo(100_000_000 + 300 * 15700);
+        assertThat(security.getLatestPrice()).isEqualTo(15700);
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 500, LocalDateTime.now(), SELL, 50, 15450, broker2.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15500));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 700, LocalDateTime.now(), SELL, 50, 15400, broker2.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15500));
+
+        assertThat(security.getStopOrderList().size()).isEqualTo(2);
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(2, "ABC", 500, LocalDateTime.now(), Side.SELL, 50, 15450, broker2.getBrokerId(), shareholder.getShareholderId(), 0, 15710));
+        assertThat(security.getStopOrderList().size()).isEqualTo(0);
+        assertThat(security.getLatestPrice()).isEqualTo(15450);
+        verify(eventPublisher).publish(new OrderActivatedEvent(2, 500));
+        verify(eventPublisher).publish(new OrderActivatedEvent(3, 700));
+
+
+    }
+
 }
