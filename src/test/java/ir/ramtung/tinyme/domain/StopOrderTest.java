@@ -29,6 +29,7 @@ import static ir.ramtung.tinyme.domain.entity.Side.BUY;
 import static ir.ramtung.tinyme.domain.entity.Side.SELL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @SpringBootTest
@@ -431,6 +432,25 @@ public class StopOrderTest {
         verify(eventPublisher).publish(new OrderRejectedEvent(2, 21, List.of(Message.ORDER_ID_NOT_FOUND)));
         orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(3,"ABC",1,LocalDateTime.now(), BUY,550,1500,1,shareholder.getShareholderId(),0,0));
         verify(eventPublisher).publish(new OrderRejectedEvent(3, 1, List.of(Message.ORDER_ID_NOT_FOUND)));
+    }
+
+    @Test
+    void check_if_passing_stop_order_limit_in_buy_order_while_updating_works_correct(){
+        Order matchingBuyOrder1 = orderBook.findByOrderId(SELL,6);
+        Order stopOrder1 = new Order(20,security, BUY,100,15900,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,15670);
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 16, LocalDateTime.now(), SELL,
+                304, 15000, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2,"ABC",20,LocalDateTime.now(), Side.BUY, 100, 15900, 1, shareholder.getShareholderId(), 0, 0,15800));
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(3, "ABC", 20, LocalDateTime.now(), Side.BUY, 500, 15910, 1, shareholder.getShareholderId(), 0, 15670));
+        verify(eventPublisher,times(1)).publish(new OrderActivatedEvent(2, 20));
+        verify(eventPublisher,times(1)).publish(new OrderUpdatedEvent(3, 20));
+        Trade trade1 = new Trade(security, 15800,500,stopOrder1,matchingBuyOrder1);
+        verify(eventPublisher).publish(new OrderExecutedEvent(3, 20,List.of(new TradeDTO(trade1))));
+
+
     }
 
 }

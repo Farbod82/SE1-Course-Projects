@@ -122,7 +122,7 @@ public class OrderHandler {
     }
 
     private boolean allowPublishingActivatedStopLimit(EnterOrderRq enterOrderRq, MatchResult matchResult) {
-        return enterOrderRq.getStopPrice() > 0 && matchResult.outcome() != MatchingOutcome.STOP_LIMIT_ORDER_ACCEPTED && matchResult.outcome() != MatchingOutcome.NOT_ENOUGH_CREDIT;
+        return enterOrderRq.getStopPrice() > 0 && matchResult.outcome() != MatchingOutcome.STOP_LIMIT_ORDER_ACCEPTED && matchResult.outcome() != MatchingOutcome.NOT_ENOUGH_CREDIT && enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER;
     }
 
     public void handleDeleteOrder(DeleteOrderRq deleteOrderRq) {
