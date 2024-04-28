@@ -470,8 +470,6 @@ public class StopOrderTest {
         assertThat(security.getLatestPrice()).isEqualTo(15450);
         verify(eventPublisher).publish(new OrderActivatedEvent(2, 500));
         verify(eventPublisher).publish(new OrderActivatedEvent(3, 700));
-
-
     }
 
 }

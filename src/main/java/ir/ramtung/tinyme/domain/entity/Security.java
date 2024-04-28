@@ -155,12 +155,13 @@ public class Security {
         }
         else{
             if(stopOrder.getSide() == Side.BUY){
+                stopOrder.getBroker().increaseCreditBy(stopOrder.getValue());
                 long valueOfTrade = (long) updateOrderRq.getPrice() *updateOrderRq.getQuantity();
                 if(!stopOrder.getBroker().hasEnoughCredit(valueOfTrade)) {
+                    stopOrder.getBroker().decreaseCreditBy((long) stopOrder.getPrice() *stopOrder.getQuantity());
                     return MatchResult.notEnoughCredit();
                 }
-                stopOrder.getBroker().increaseCreditBy(stopOrder.getValue());
-                stopOrder.getBroker().decreaseCreditBy((long) updateOrderRq.getPrice() *updateOrderRq.getQuantity());
+                stopOrder.getBroker().decreaseCreditBy(valueOfTrade);
             }
             stopOrder.updateFromRequest(updateOrderRq);
             return MatchResult.executed(null, List.of());
