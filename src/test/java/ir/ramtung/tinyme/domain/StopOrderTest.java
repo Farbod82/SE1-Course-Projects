@@ -475,10 +475,13 @@ public class StopOrderTest {
     @Test
     void check_if_passing_stop_order_limit_in_sell_order_while_updating_works_correct() {
         initial_test();
+        Broker broker2 = Broker.builder().brokerId(3).credit(100_000_000L).build();
+        brokerRepository.addBroker(broker2);
+
         Order order1 = new Order(20, security, BUY, 200, 700, broker1, shareholder, LocalDateTime.now(), OrderStatus.NEW, 0, false, 0);
         Order order2 = new Order(21, security, SELL, 100, 550, broker1, shareholder, LocalDateTime.now(), OrderStatus.NEW, 0, false, 0);
         Order order3 = new Order(22, security, BUY, 100, 600, broker1, shareholder, LocalDateTime.now(), OrderStatus.NEW, 0, false, 0);
-        Order stopOrder = new Order(23, security, SELL, 200, 670, broker1, shareholder, LocalDateTime.now(), OrderStatus.NEW, 0, false, 500);
+        Order stopOrder = new Order(23, security, SELL, 200, 670, broker2, shareholder, LocalDateTime.now(), OrderStatus.NEW, 0, false, 500);
 
         List<Order> orders = Arrays.asList(
                 order1, order2
@@ -487,13 +490,13 @@ public class StopOrderTest {
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1,"ABC",22, order3.getEntryTime(), Side.BUY, 100, 550, 1, shareholder.getShareholderId(), 0, 0,0));
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2,"ABC",23, stopOrder.getEntryTime(), SELL, 200, 670, 1, shareholder.getShareholderId(), 0, 0,500));
 
-        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(3,"ABC",23,LocalDateTime.now(), SELL,200,640,1,shareholder.getShareholderId(),0,600));
+        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(3,"ABC",23,LocalDateTime.now(), SELL,200,640,3,shareholder.getShareholderId(),0,600));
 
         Trade trade3 = new Trade(security, 550,100, order2, order3);
         verify(eventPublisher).publish(new OrderExecutedEvent(1, 22,List.of(new TradeDTO(trade3))));
 
-        Trade trade4 = new Trade(security, 640,200,order1,stopOrder);
-        verify(eventPublisher).publish(new OrderExecutedEvent(3, 23,List.of(new TradeDTO(trade4))));
+        Trade trade4 = new Trade(security, 700,200,order1,stopOrder);
+        verify(eventPublisher).publish(new OrderExecutedEvent(2, 23,List.of(new TradeDTO(trade4))));
     }
 
 
