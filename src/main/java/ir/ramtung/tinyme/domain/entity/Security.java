@@ -92,6 +92,7 @@ public class Security {
             if(buyerBrokerHasNotEnoughCredit(order)){
                     return MatchResult.notEnoughCredit();
             }
+
             return matcher.execute(order);
         }
         else{
@@ -147,7 +148,7 @@ public class Security {
         return null;
     }
 
-    public MatchResult updateUnactivatedStopLimitOrder(EnterOrderRq updateOrderRq) throws InvalidRequestException{
+    public MatchResult updateUnactivatedStopLimitOrder(EnterOrderRq updateOrderRq, Matcher matcher) throws InvalidRequestException{
         Order stopOrder = findUnactiveStopOrderById(updateOrderRq.getOrderId());
         if (checkSellerShareholderDoesntHaveEnoughPositions(updateOrderRq, stopOrder)){
             return MatchResult.notEnoughPositions();
@@ -159,10 +160,16 @@ public class Security {
                     return MatchResult.notEnoughCredit();
                 }
                 stopOrder.getBroker().increaseCreditBy(stopOrder.getValue());
-                stopOrder.getBroker().decreaseCreditBy(valueOfTrade);
             }
             stopOrder.updateFromRequest(updateOrderRq);
-            return MatchResult.executed(null, List.of());
+            if (mustBeActivated(stopOrder)){
+
+                return matcher.execute(stopOrder);
+            }
+            else {
+                stopOrder.getBroker().decreaseCreditBy((long) updateOrderRq.getPrice() *updateOrderRq.getQuantity());
+                return MatchResult.executed(null, List.of());
+            }
         }
     }
 
@@ -219,7 +226,7 @@ public class Security {
     public MatchResult updateOrder(EnterOrderRq updateOrderRq, Matcher matcher) throws InvalidRequestException {
 
         if(findUnactiveStopOrderById(updateOrderRq.getOrderId()) != null) {
-            return updateUnactivatedStopLimitOrder(updateOrderRq);
+            return updateUnactivatedStopLimitOrder(updateOrderRq, matcher);
         }
         else {
             Order order = orderBook.findByOrderId(updateOrderRq.getSide(), updateOrderRq.getOrderId());
