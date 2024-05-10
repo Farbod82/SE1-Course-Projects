@@ -4,6 +4,7 @@ import ir.ramtung.tinyme.messaging.event.OrderActivatedEvent;
 import ir.ramtung.tinyme.messaging.exception.InvalidRequestException;
 import ir.ramtung.tinyme.messaging.request.DeleteOrderRq;
 import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
+import ir.ramtung.tinyme.messaging.request.MatchingState;
 import ir.ramtung.tinyme.domain.service.Matcher;
 import ir.ramtung.tinyme.messaging.Message;
 import lombok.Builder;
@@ -21,6 +22,9 @@ import static ir.ramtung.tinyme.domain.entity.Side.BUY;
 @Builder
 public class Security {
     private String isin;
+    @Builder.Default
+    private
+    MatchingState matchingState = MatchingState.CONTINUOUS;
     @Builder.Default
     private int tickSize = 1;
     @Builder.Default
@@ -46,7 +50,6 @@ public class Security {
                 !order.getShareholder().hasEnoughPositionsOn(this,
                         orderBook.totalSellQuantityByShareholder(order.getShareholder()) - order.getQuantity() + enterOrderRq.getQuantity());
     }
-
 
     public MatchResult newOrder(EnterOrderRq enterOrderRq, Broker broker, Shareholder shareholder, Matcher matcher) {
         if (enterOrderRq.getSide() == Side.SELL &&
@@ -285,5 +288,16 @@ public class Security {
             }
             return matcher.execute(order);
         }
+    }
+
+    public boolean isAuctionMatching(){
+        if(matchingState == MatchingState.AUCTION){
+            return true;
+        }
+        return false;
+    }
+
+    public void changeSecurityStatus(MatchingState newMatchingState){
+        matchingState = newMatchingState;
     }
 }

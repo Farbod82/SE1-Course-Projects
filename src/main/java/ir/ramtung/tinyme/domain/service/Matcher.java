@@ -16,12 +16,6 @@ public class Matcher {
 
         OrderBook orderBook = newOrder.getSecurity().getOrderBook();
         LinkedList<Trade> trades = new LinkedList<>();
-        if(isOkAuctionMatchCondition(newOrder)){
-            orderBook.enqueue(newOrder);
-            return auctionMatch(orderBook);
-        } else if (matchingState == MatchingState.AUCTION) {
-            // exception?!
-        }
 
         while (orderBook.hasOrderOfType(newOrder.getSide().opposite()) && newOrder.getQuantity() > 0) {
             Order matchingOrder = orderBook.matchWithFirst(newOrder);
@@ -107,14 +101,6 @@ public class Matcher {
             order.getSecurity().setLatestCost(result.trades().getLast());
         }
         return result;
-    }
-
-
-    private boolean isOkAuctionMatchCondition(Order order){
-        if(matchingState == MatchingState.AUCTION && order.getStopPrice() == 0
-            && order.getMinimumExecutionQuantity() == 0)
-            return true;
-        return false;
     }
 
     private MatchResult auctionMatch(OrderBook orderBook){
