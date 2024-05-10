@@ -1,6 +1,5 @@
 package ir.ramtung.tinyme.domain.entity;
 
-import com.fasterxml.jackson.databind.deser.DataFormatReaders;
 import ir.ramtung.tinyme.messaging.event.OrderActivatedEvent;
 import ir.ramtung.tinyme.messaging.exception.InvalidRequestException;
 import ir.ramtung.tinyme.messaging.request.DeleteOrderRq;
@@ -122,7 +121,7 @@ public class Security {
 
     public void deleteOrder(DeleteOrderRq deleteOrderRq) throws InvalidRequestException {
         Order order = orderBook.findByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
-        Order unactivatedStopOrder = findUnactiveStopOrderById(deleteOrderRq.getOrderId());
+        Order unactivatedStopOrder = findUnactivatedStopOrderById(deleteOrderRq.getOrderId());
 
         if(unactivatedStopOrder != null){
             stopOrderList.remove(unactivatedStopOrder);
@@ -140,7 +139,7 @@ public class Security {
         }
     }
 
-    public Order findUnactiveStopOrderById(long orderId) {
+    public Order findUnactivatedStopOrderById(long orderId) {
         for (Order order : stopOrderList) {
             if (order.getOrderId() == orderId)
                 return order;
@@ -149,7 +148,7 @@ public class Security {
     }
 
     public MatchResult updateUnactivatedStopLimitOrder(EnterOrderRq updateOrderRq, Matcher matcher) throws InvalidRequestException{
-        Order stopOrder = findUnactiveStopOrderById(updateOrderRq.getOrderId());
+        Order stopOrder = findUnactivatedStopOrderById(updateOrderRq.getOrderId());
         if (checkSellerShareholderDoesntHaveEnoughPositions(updateOrderRq, stopOrder)){
             return MatchResult.notEnoughPositions();
         }
@@ -220,7 +219,7 @@ public class Security {
 
     public MatchResult updateOrder(EnterOrderRq updateOrderRq, Matcher matcher) throws InvalidRequestException {
 
-        if(findUnactiveStopOrderById(updateOrderRq.getOrderId()) != null) {
+        if(findUnactivatedStopOrderById(updateOrderRq.getOrderId()) != null) {
             return updateUnactivatedStopLimitOrder(updateOrderRq, matcher);
         }
         else {
