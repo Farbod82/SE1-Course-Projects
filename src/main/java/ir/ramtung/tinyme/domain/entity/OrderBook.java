@@ -87,4 +87,14 @@ public class OrderBook {
                 .mapToInt(Order::getTotalQuantity)
                 .sum();
     }
+
+    public long findMinimumPriceOfSellOrder(){
+        return sellQueue.stream().mapToLong(Order::getPrice).min().orElse(0);
+    }
+
+    public long findMaximumPriceOfBuyOrder(){
+        return buyQueue.stream().mapToLong(Order::getPrice).max().orElse(0);
+    }
+
+
 }
