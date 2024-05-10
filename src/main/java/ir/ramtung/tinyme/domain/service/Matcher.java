@@ -1,6 +1,7 @@
 package ir.ramtung.tinyme.domain.service;
 
 import ir.ramtung.tinyme.domain.entity.*;
+import ir.ramtung.tinyme.messaging.request.MatchingState;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedList;
@@ -10,10 +11,17 @@ import static java.lang.Math.abs;
 
 @Service
 public class Matcher {
+    private MatchingState matchingState;
     public MatchResult match(Order newOrder) {
-        Security security = newOrder.getSecurity();
+
         OrderBook orderBook = newOrder.getSecurity().getOrderBook();
         LinkedList<Trade> trades = new LinkedList<>();
+        if(isOkAuctionMatchCondition(newOrder)){
+            orderBook.enqueue(newOrder);
+            return auctionMatch(orderBook);
+        } else if (matchingState == MatchingState.AUCTION) {
+            // exception?!
+        }
 
         while (orderBook.hasOrderOfType(newOrder.getSide().opposite()) && newOrder.getQuantity() > 0) {
             Order matchingOrder = orderBook.matchWithFirst(newOrder);
@@ -101,4 +109,16 @@ public class Matcher {
         return result;
     }
 
+
+    private boolean isOkAuctionMatchCondition(Order order){
+        if(matchingState == MatchingState.AUCTION && order.getStopPrice() == 0
+            && order.getMinimumExecutionQuantity() == 0)
+            return true;
+        return false;
+    }
+
+    private MatchResult auctionMatch(OrderBook orderBook){
+        //to do
+        return null;
+    }
 }
