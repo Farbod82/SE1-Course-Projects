@@ -98,6 +98,7 @@ public class OrderHandler {
             }
             publishMatchOutComes(matchResult,enterOrderRq);
             checkAllActivatedStopLimitOrders(security);
+
             
         } catch (InvalidRequestException ex) {
             eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), ex.getReasons()));
