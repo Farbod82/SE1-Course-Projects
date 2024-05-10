@@ -1,11 +1,11 @@
 package ir.ramtung.tinyme.domain.entity;
 
+import ch.qos.logback.core.joran.sanity.Pair;
 import lombok.Getter;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ListIterator;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
 @Getter
 public class OrderBook {
@@ -89,7 +89,7 @@ public class OrderBook {
                 .sum();
     }
 
-    public OrderBook findNewOrderBookBasedOnIOP(long indicativeOpeningPrice){
+    public long findQuantityOfAllTrades(long indicativeOpeningPrice){
         LinkedList<Order> newSellQueue = sellQueue.stream()
                 .filter(order -> order.getPrice() <= indicativeOpeningPrice)
                 .collect(Collectors.toCollection(LinkedList::new));
@@ -97,33 +97,9 @@ public class OrderBook {
                 .filter(order -> order.getPrice() >= indicativeOpeningPrice)
                 .collect(Collectors.toCollection(LinkedList::new));
 
-        OrderBook filteredOrderBook = new OrderBook();
-        newSellQueue.forEach(order -> filteredOrderBook.enqueue(order));
-        newBuyQueue.forEach(order -> filteredOrderBook.enqueue(order));
-
-        return filteredOrderBook;
-    }
-
-    public long findQuantityOfAllTrades(long indicativeOpeningPrice){
-        long totalQuantity = 0;
-        OrderBook filteredOrderBook = findNewOrderBookBasedOnIOP(indicativeOpeningPrice);
-
-        while(filteredOrderBook.hasOrderOfType(Side.BUY) && filteredOrderBook.hasOrderOfType(Side.SELL)){
-
-            Order buyOrder = filteredOrderBook.getQueue(Side.BUY).getFirst();
-            Order matchingOrder = filteredOrderBook.matchWithFirst(buyOrder);
-            totalQuantity = Math.min(buyOrder.getQuantity(), matchingOrder.getQuantity()) + totalQuantity;
-            if (buyOrder.getQuantity() >= matchingOrder.getQuantity()) {
-                buyOrder.decreaseQuantity(matchingOrder.getQuantity());
-                filteredOrderBook.removeFirst(matchingOrder.getSide());
-            }
-            else {
-                matchingOrder.decreaseQuantity(buyOrder.getQuantity());
-                buyOrder.makeQuantityZero();
-            }
-        }
-
-        return totalQuantity;
+        long sumSellQueue = newSellQueue.stream().mapToLong(Order::getQuantity).sum();
+        long sumBuyQueue = newBuyQueue.stream().mapToLong(Order::getQuantity).sum();
+        return Math.min(sumSellQueue, sumBuyQueue);
     }
 
     public long findMinimumPriceOfSellOrder(){
@@ -134,11 +110,19 @@ public class OrderBook {
         return buyQueue.stream().mapToLong(Order::getPrice).max().orElse(0);
     }
 
-    public long calculateIndicativeOpeningPrice(){
+    public long calculateIndicativeOpeningPrice(long lastTradeValue){
+        long minOfInterval = findMinimumPriceOfSellOrder();
+        long maxOfInterval = findMaximumPriceOfBuyOrder();
 
-        // to do
-        return 0;
+        List<Map.Entry<Long, Long>> pairsOfIOPAndQuantity = LongStream.rangeClosed(minOfInterval, maxOfInterval)
+                .mapToObj(num -> Map.entry(findQuantityOfAllTrades(num), num))
+                .collect(Collectors.toList());
+
+        Optional<Map.Entry<Long, Long>> maxPair = pairsOfIOPAndQuantity.stream()
+                .max(Comparator.comparingLong((Map.Entry<Long, Long> pair) -> pair.getKey())
+                        .thenComparingLong(pair -> Math.abs(pair.getValue() - lastTradeValue))
+                        .thenComparingLong(Map.Entry::getValue));
+        return maxPair.get().getKey();
     }
-
 
 }
