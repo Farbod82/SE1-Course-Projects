@@ -86,8 +86,11 @@ public class OrderHandler {
             Security security = securityRepository.findSecurityByIsin(enterOrderRq.getSecurityIsin());
             Broker broker = brokerRepository.findBrokerById(enterOrderRq.getBrokerId());
             Shareholder shareholder = shareholderRepository.findShareholderById(enterOrderRq.getShareholderId());
-
-            MatchResult matchResult = handleEnterOrderMatching(enterOrderRq, security, broker, shareholder);
+            MatchResult matchResult;
+            if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER)
+                matchResult = security.newOrder(enterOrderRq, broker, shareholder, matcher);
+            else
+                matchResult = security.updateOrder(enterOrderRq, matcher);
 
             if(allowPublishingActivatedStopLimit(enterOrderRq, matchResult)){
                 eventPublisher.publish(new OrderActivatedEvent(enterOrderRq.getRequestId(),enterOrderRq.getOrderId()));
@@ -99,15 +102,6 @@ public class OrderHandler {
         } catch (InvalidRequestException ex) {
             eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), ex.getReasons()));
         }
-    }
-
-    private MatchResult handleEnterOrderMatching(EnterOrderRq enterOrderRq, Security security, Broker broker, Shareholder shareholder) throws InvalidRequestException {
-        MatchResult matchResult;
-        if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER)
-            matchResult = security.newOrder(enterOrderRq, broker, shareholder, matcher);
-        else
-            matchResult = security.updateOrder(enterOrderRq, matcher);
-        return matchResult;
     }
 
     private void checkAllActivatedStopLimitOrders(Security security) {
