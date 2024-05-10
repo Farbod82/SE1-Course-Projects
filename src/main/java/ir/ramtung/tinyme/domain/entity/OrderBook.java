@@ -116,13 +116,13 @@ public class OrderBook {
 
         List<Map.Entry<Long, Long>> pairsOfIOPAndQuantity = LongStream.rangeClosed(minOfInterval, maxOfInterval)
                 .mapToObj(num -> Map.entry(findQuantityOfAllTrades(num), num))
-                .collect(Collectors.toList());
+                .toList();
 
         Optional<Map.Entry<Long, Long>> maxPair = pairsOfIOPAndQuantity.stream()
-                .max(Comparator.comparingLong((Map.Entry<Long, Long> pair) -> pair.getKey())
-                        .thenComparingLong(pair -> Math.abs(pair.getValue() - lastTradeValue))
-                        .thenComparingLong(Map.Entry::getValue));
-        return maxPair.get().getKey();
+                .max(Map.Entry.<Long, Long>comparingByKey().reversed()
+                        .thenComparingLong(entry -> Math.abs(entry.getValue() - lastTradeValue)).reversed()
+                        .thenComparingLong(entry -> entry.getValue()));
+        return maxPair.get().getValue();
     }
 
 }
