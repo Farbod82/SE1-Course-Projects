@@ -19,7 +19,10 @@ public class Matcher {
         if(isOkAuctionMatchCondition(newOrder)){
             orderBook.enqueue(newOrder);
             return auctionMatch(orderBook);
+        } else if (matchingState == MatchingState.AUCTION) {
+            // exception?!
         }
+
         while (orderBook.hasOrderOfType(newOrder.getSide().opposite()) && newOrder.getQuantity() > 0) {
             Order matchingOrder = orderBook.matchWithFirst(newOrder);
             if (matchingOrder == null)
@@ -108,8 +111,10 @@ public class Matcher {
 
 
     private boolean isOkAuctionMatchCondition(Order order){
-        // to do
-        return true;
+        if(matchingState == MatchingState.AUCTION && order.getStopPrice() == 0
+            && order.getMinimumExecutionQuantity() == 0)
+            return true;
+        return false;
     }
 
     private MatchResult auctionMatch(OrderBook orderBook){
