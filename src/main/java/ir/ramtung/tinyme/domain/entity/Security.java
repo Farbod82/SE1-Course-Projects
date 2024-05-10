@@ -12,7 +12,6 @@ import lombok.Getter;
 
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -73,6 +72,8 @@ public class Security {
         }
         return matcher.execute(order);
     }
+
+
 
     private boolean isStopLimitOrder(EnterOrderRq enterOrderRq) {
         return enterOrderRq.getStopPrice() > 0;
@@ -290,14 +291,11 @@ public class Security {
         }
     }
 
-    public boolean isAuctionMatching(){
-        if(matchingState == MatchingState.AUCTION){
-            return true;
-        }
-        return false;
+    public boolean isInAuctionMatchingState(){
+        return matchingState == MatchingState.AUCTION;
     }
 
-    public void changeSecurityStatus(MatchingState newMatchingState){
+    public void changeSecurityStatusTo(MatchingState newMatchingState){
         matchingState = newMatchingState;
     }
 }
