@@ -5,6 +5,7 @@ import lombok.Getter;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.stream.Collectors;
 
 @Getter
 public class OrderBook {
@@ -88,12 +89,55 @@ public class OrderBook {
                 .sum();
     }
 
+    public OrderBook findNewOrderBookBasedOnIOP(long indicativeOpeningPrice){
+        LinkedList<Order> newSellQueue = sellQueue.stream()
+                .filter(order -> order.getPrice() <= indicativeOpeningPrice)
+                .collect(Collectors.toCollection(LinkedList::new));
+        LinkedList<Order> newBuyQueue = buyQueue.stream()
+                .filter(order -> order.getPrice() >= indicativeOpeningPrice)
+                .collect(Collectors.toCollection(LinkedList::new));
+
+        OrderBook filteredOrderBook = new OrderBook();
+        newSellQueue.forEach(order -> filteredOrderBook.enqueue(order));
+        newBuyQueue.forEach(order -> filteredOrderBook.enqueue(order));
+
+        return filteredOrderBook;
+    }
+
+    public long findQuantityOfAllTrades(long indicativeOpeningPrice){
+        long totalQuantity = 0;
+        OrderBook filteredOrderBook = findNewOrderBookBasedOnIOP(indicativeOpeningPrice);
+
+        while(filteredOrderBook.hasOrderOfType(Side.BUY) && filteredOrderBook.hasOrderOfType(Side.SELL)){
+
+            Order buyOrder = filteredOrderBook.getQueue(Side.BUY).getFirst();
+            Order matchingOrder = filteredOrderBook.matchWithFirst(buyOrder);
+            totalQuantity = Math.min(buyOrder.getQuantity(), matchingOrder.getQuantity()) + totalQuantity;
+            if (buyOrder.getQuantity() >= matchingOrder.getQuantity()) {
+                buyOrder.decreaseQuantity(matchingOrder.getQuantity());
+                filteredOrderBook.removeFirst(matchingOrder.getSide());
+            }
+            else {
+                matchingOrder.decreaseQuantity(buyOrder.getQuantity());
+                buyOrder.makeQuantityZero();
+            }
+        }
+
+        return totalQuantity;
+    }
+
     public long findMinimumPriceOfSellOrder(){
         return sellQueue.stream().mapToLong(Order::getPrice).min().orElse(0);
     }
 
     public long findMaximumPriceOfBuyOrder(){
         return buyQueue.stream().mapToLong(Order::getPrice).max().orElse(0);
+    }
+
+    public long calculateIndicativeOpeningPrice(){
+
+        // to do
+        return 0;
     }
 
 
