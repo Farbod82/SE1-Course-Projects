@@ -11,7 +11,8 @@ import static java.lang.Math.abs;
 
 @Service
 public class Matcher {
-    private MatchingState matchingState;
+
+
     public MatchResult match(Order newOrder) {
 
         OrderBook orderBook = newOrder.getSecurity().getOrderBook();
@@ -103,8 +104,9 @@ public class Matcher {
         return result;
     }
 
-    private MatchResult auctionMatch(OrderBook orderBook){
+    private MatchResult auctionMatch(OrderBook orderBook , int openingPrice){
         //to do
+
         return null;
     }
 }
