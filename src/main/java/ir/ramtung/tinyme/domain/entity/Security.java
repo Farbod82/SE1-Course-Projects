@@ -53,24 +53,31 @@ public class Security {
     public MatchResult newOrder(EnterOrderRq enterOrderRq, Broker broker, Shareholder shareholder, Matcher matcher) {
         if (enterOrderRq.getSide() == Side.SELL &&
                 !shareholder.hasEnoughPositionsOn(this,
-                orderBook.totalSellQuantityByShareholder(shareholder) + enterOrderRq.getQuantity()))
+                        orderBook.totalSellQuantityByShareholder(shareholder) + enterOrderRq.getQuantity()))
             return MatchResult.notEnoughPositions();
-        
+
         Order order;
 
-        if (isStopLimitOrder(enterOrderRq)){
+        if (isStopLimitOrder(enterOrderRq)) {
             return handleNewStopLimitOrder(enterOrderRq, broker, shareholder, matcher);
-        }
-        else if(isIcebergOrder(enterOrderRq)){
+        } else if (isIcebergOrder(enterOrderRq)) {
             order = new IcebergOrder(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
-            enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder,
-            enterOrderRq.getEntryTime(), enterOrderRq.getPeakSize());
-        }
-        else{
+                    enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder,
+                    enterOrderRq.getEntryTime(), enterOrderRq.getPeakSize());
+        } else {
             order = new Order(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
                     enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder, enterOrderRq.getEntryTime(), OrderStatus.NEW, enterOrderRq.getMinimumExecutionQuantity());
         }
-        return matcher.execute(order);
+
+
+        if (matchingState == MatchingState.CONTINUOUS) {
+            return matcher.execute(order);
+        }
+        else{
+            orderBook.enqueue(order);
+            // put there the opening price
+            return MatchResult.queuedForAuction(10);
+        }
     }
 
 

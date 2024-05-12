@@ -27,6 +27,10 @@ public final class MatchResult {
     public static MatchResult stopLimitOrderNotAccepted() {
         return new MatchResult(MatchingOutcome.STOP_LIMIT_ORDER_NOT_ACCEPTED, null, new LinkedList<>());
     }
+    public static MatchResult queuedForAuction(int openingPrice){
+        return new MatchResult(MatchingOutcome.QUEUED_FOR_AUCTION, null, new LinkedList<>());
+    }
+
     private MatchResult(MatchingOutcome outcome, Order remainder, LinkedList<Trade> trades) {
         this.outcome = outcome;
         this.remainder = remainder;

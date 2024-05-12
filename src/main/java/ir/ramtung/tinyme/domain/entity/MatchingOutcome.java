@@ -9,4 +9,6 @@ public enum MatchingOutcome {
     STOP_LIMIT_ORDER_NOT_ACCEPTED,
     STOP_LIMIT_ORDER_ACCEPTED,
 
+    QUEUED_FOR_AUCTION,
+
 }
