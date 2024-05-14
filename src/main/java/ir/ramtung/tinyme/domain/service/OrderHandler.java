@@ -62,7 +62,10 @@ public class OrderHandler {
             eventPublisher.publish(new OrderExecutedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
         }
         if (matchResult.outcome() == MatchingOutcome.QUEUED_FOR_AUCTION){
-            eventPublisher.publish(new OpeningPriceEvent(enterOrderRq.getSecurityIsin(),10, 20));
+            Security security = securityRepository.findSecurityByIsin(enterOrderRq.getSecurityIsin());
+            OrderBook orderBook = security.getOrderBook();
+            orderBook.updateCurrentOpeningPriceAndMaxQuantity(security.getLatestPrice());
+            eventPublisher.publish(new OpeningPriceEvent(enterOrderRq.getSecurityIsin(),orderBook.getOpeningPrice(), orderBook.getMaxQuantityInAuctionState()));
         }
     }
 
@@ -104,9 +107,9 @@ public class OrderHandler {
 
             if (! security.isInAuctionMatchingState()) {
                 publishingInstantlyActivatedStopLimitOrders(enterOrderRq,matchResult);
-                publishMatchOutComes(matchResult, enterOrderRq);
                 checkAllActivatedStopLimitOrders(security);
             }
+            publishMatchOutComes(matchResult, enterOrderRq);
             
         } catch (InvalidRequestException ex) {
             eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), ex.getReasons()));

@@ -37,7 +37,7 @@ public class Security {
     private HashMap<Long, EnterOrderRq> requestIDs = new HashMap<>();
     @Builder.Default
     private LinkedList<Order>  activeStopOrderList = new LinkedList<>();
-    int latestPrice;
+    private int latestPrice;
     EnterOrderRq lastProcessedReqID;
 
     public void setLatestCost(Trade trade){
@@ -76,6 +76,7 @@ public class Security {
         else{
 
             orderBook.enqueue(order);
+
             // put there the opening price
             return MatchResult.queuedForAuction(10);
         }

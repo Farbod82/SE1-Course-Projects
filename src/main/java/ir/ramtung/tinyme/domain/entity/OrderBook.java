@@ -1,6 +1,5 @@
 package ir.ramtung.tinyme.domain.entity;
 
-import ch.qos.logback.core.joran.sanity.Pair;
 import lombok.Getter;
 
 import java.util.*;
@@ -11,6 +10,8 @@ import java.util.stream.LongStream;
 public class OrderBook {
     private final LinkedList<Order> buyQueue;
     private final LinkedList<Order> sellQueue;
+    private long openingPrice;
+    private long maxQuantityInAuctionState;
 
     public OrderBook() {
         buyQueue = new LinkedList<>();
@@ -116,7 +117,7 @@ public class OrderBook {
         return buyQueue.stream().mapToLong(Order::getPrice).max().orElse(0);
     }
 
-    public long calculateIndicativeOpeningPrice(long lastTradeValue){
+    public void updateCurrentOpeningPriceAndMaxQuantity(long lastTradeValue){
         long minOfInterval = findMinimumPriceOfSellOrder();
         long maxOfInterval = findMaximumPriceOfBuyOrder();
 
@@ -124,11 +125,12 @@ public class OrderBook {
                 .mapToObj(num -> Map.entry(findQuantityOfAllTrades(num), num))
                 .toList();
 
-        Optional<Map.Entry<Long, Long>> maxPair = pairsOfIOPAndQuantity.stream()
+        Optional<Map.Entry<Long, Long>> priceAndMaxQuantityPair = pairsOfIOPAndQuantity.stream()
                 .max(Map.Entry.<Long, Long>comparingByKey().reversed()
                         .thenComparingLong(entry -> Math.abs(entry.getValue() - lastTradeValue)).reversed()
                         .thenComparingLong(entry -> entry.getValue()));
-        return maxPair.get().getValue();
+        openingPrice = priceAndMaxQuantityPair.get().getValue();
+        maxQuantityInAuctionState = priceAndMaxQuantityPair.get().getKey();
     }
 
 }
