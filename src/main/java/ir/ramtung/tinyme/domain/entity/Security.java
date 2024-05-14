@@ -74,6 +74,7 @@ public class Security {
             return matcher.execute(order);
         }
         else{
+
             orderBook.enqueue(order);
             // put there the opening price
             return MatchResult.queuedForAuction(10);
