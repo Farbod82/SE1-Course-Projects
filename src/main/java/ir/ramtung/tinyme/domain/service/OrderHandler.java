@@ -149,7 +149,7 @@ public class OrderHandler {
     private void validateEnterOrderRqInAuctionState(EnterOrderRq enterOrderRq) throws InvalidRequestException{
         List<String> errors = new LinkedList<>();
         if(enterOrderRq.getMinimumExecutionQuantity() > 0) {
-            errors.add(Message.MINIMUM_EXECUTION_QUANTITY_ORDER_NOT_ALLOWED_IN_AUCTION_MODE);
+            errors.add(Message.ORDER_WITH_MINIMUM_EXECUTION_QUANTITY_NOT_ALLOWED_IN_AUCTION_MODE);
         }
         if(enterOrderRq.getStopPrice() > 0){
             errors.add(Message.STOP_LIMIT_ORDER_NOT_ALLOWED_IN_AUCTION_MODE);

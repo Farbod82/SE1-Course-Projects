@@ -23,7 +23,7 @@ public class Message {
     public static final String CANNOT_SPECIFY_STOP_LIMIT_PRICE_FOR_A_NON_STOP_LIMIT_ORDER = "Cannot specify stop limit price for a non-stop-limit order";
     public static final String CANNOT_SPECIFY_STOP_LIMIT_PRICE_FOR_A_ACTIVATED_STOP_LIMIT_ORDER = "Cannot specify stop limit price for a activated stop-limit order";
 
-    public static final String MINIMUM_EXECUTION_QUANTITY_ORDER_NOT_ALLOWED_IN_AUCTION_MODE = "Minimum Execution Quantity Order is not possible in Auction Mode";
+    public static final String ORDER_WITH_MINIMUM_EXECUTION_QUANTITY_NOT_ALLOWED_IN_AUCTION_MODE = "Order with positive minimum execution quantity is not possible in Auction Mode";
 
     public static final String STOP_LIMIT_ORDER_NOT_ALLOWED_IN_AUCTION_MODE = "Stop Limit Order is not possible in Auction Mode";
 
