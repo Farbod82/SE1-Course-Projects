@@ -143,8 +143,7 @@ public class AuctionMatchingTest {
 
     @Test
     void check_opening_price_published_correctly_after_change_last_price_by_opening() {
-        set_check_opening_price_status();changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
-
+        set_check_opening_price_status();
         changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
 
         Order order2 = new Order(21,security, BUY,100,15835,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
@@ -180,6 +179,21 @@ public class AuctionMatchingTest {
         verify(eventPublisher).publish(new OpeningPriceEvent("ABC", 15815, 77));
     }
 
+    @Test
+    void check_update_order_correctly_done_in_auction_matching(){
+        set_check_opening_price_status();
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(2, "ABC", 7, LocalDateTime.now(), Side.SELL, 2, 15801, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0));
+        Order order2 = new Order(21,security, BUY,100,15835,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 21, order2.getEntryTime(), BUY,
+                100, 15835, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+
+        verify(eventPublisher).publish(new OrderAcceptedEvent(1, 20));
+        verify(eventPublisher).publish(new OpeningPriceEvent("ABC", 15810, 400));
+        // Ambiguity in domain
+        //        verify(eventPublisher).publish(new OpeningPriceEvent("ABC", 456, 3546));
+    }
 
     @Test
     void check_delete_order_correctly_done_in_auction_matching(){
