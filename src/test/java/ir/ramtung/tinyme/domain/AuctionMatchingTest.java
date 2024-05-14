@@ -7,8 +7,7 @@ import ir.ramtung.tinyme.domain.service.Matcher;
 import ir.ramtung.tinyme.domain.service.OrderHandler;
 import ir.ramtung.tinyme.messaging.EventPublisher;
 import ir.ramtung.tinyme.messaging.Message;
-import ir.ramtung.tinyme.messaging.event.OrderRejectedEvent;
-import ir.ramtung.tinyme.messaging.event.SecurityStateChangedEvent;
+import ir.ramtung.tinyme.messaging.event.*;
 import ir.ramtung.tinyme.messaging.request.ChangeMatchingStateRq;
 import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
 import ir.ramtung.tinyme.messaging.request.MatchingState;
@@ -29,6 +28,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static ir.ramtung.tinyme.domain.entity.Side.BUY;
+import static ir.ramtung.tinyme.domain.entity.Side.SELL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -97,12 +97,12 @@ public class AuctionMatchingTest {
 
         orders.forEach(order -> orderBook.enqueue(order));
 
-        long IOP = orderBook.calculateIndicativeOpeningPrice(15850);
-        assertThat(IOP).isEqualTo(15850);
-        IOP = orderBook.calculateIndicativeOpeningPrice(16000);
-        assertThat(IOP).isEqualTo(15900);
-        IOP = orderBook.calculateIndicativeOpeningPrice(15000);
-        assertThat(IOP).isEqualTo(15810);
+        orderBook.updateCurrentOpeningPriceAndMaxQuantity(15850);
+        assertThat(orderBook.getOpeningPrice()).isEqualTo(15850);
+        orderBook.updateCurrentOpeningPriceAndMaxQuantity(16000);
+        assertThat(orderBook.getOpeningPrice()).isEqualTo(15900);
+        orderBook.updateCurrentOpeningPriceAndMaxQuantity(15000);
+        assertThat(orderBook.getOpeningPrice()).isEqualTo(15810);
     }
 
     @Test
@@ -157,7 +157,25 @@ public class AuctionMatchingTest {
         assertThat(security.getOrderBook().getBuyQueue().size()).isEqualTo(1);
         assertThat(security.getOrderBook().getBuyQueue().getFirst().getOrderId()).isEqualTo(3);
         assertThat(security.getOrderBook().getSellQueue().size()).isEqualTo(0);
-
     }
 
+    @Test
+    void check_opening_price_published_correctly() {
+        orders = Arrays.asList(
+                new Order(6, security, Side.SELL, 200, 15800, broker1, shareholder),
+                new Order(7, security, Side.SELL, 200, 15810, broker1, shareholder),
+                new Order(6, security, BUY, 200, 15900, broker, shareholder),
+                new Order(7, security, BUY, 200, 15910, broker, shareholder));
+
+        orders.forEach(order -> orderBook.enqueue(order));
+        changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
+
+        Order order1 = new Order(20,security, SELL,285,15815,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, order1.getEntryTime(), SELL,
+                285, 15815, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+
+        verify(eventPublisher).publish(new OrderAcceptedEvent(1, 20));
+        verify(eventPublisher).publish(new OpeningPriceEvent("ABC", 15810, 400));
+    }
 }
