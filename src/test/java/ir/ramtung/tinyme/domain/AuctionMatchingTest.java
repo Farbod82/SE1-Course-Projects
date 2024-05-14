@@ -84,6 +84,25 @@ public class AuctionMatchingTest {
 
     }
 
+    void set_check_opening_price_status(){
+        orders = Arrays.asList(
+                new Order(5, security, Side.SELL, 200, 16000, broker1, shareholder),
+                new Order(6, security, Side.SELL, 200, 15800, broker1, shareholder),
+                new Order(7, security, Side.SELL, 200, 15810, broker1, shareholder),
+                new Order(8, security, BUY, 200, 15900, broker, shareholder),
+                new Order(9, security, BUY, 200, 15910, broker, shareholder),
+                new Order(10, security, BUY, 200, 15000, broker, shareholder));
+
+        orders.forEach(order -> orderBook.enqueue(order));
+        changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
+
+        Order order1 = new Order(20,security, SELL,200,15815,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, order1.getEntryTime(), SELL,
+                285, 15815, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+
+    }
+
     @Test
     void check_correct_indicative_opening_price() {
         orders = Arrays.asList(
@@ -124,22 +143,7 @@ public class AuctionMatchingTest {
 
     @Test
     void check_opening_price_published_correctly_after_change_last_price_by_opening() {
-        orders = Arrays.asList(
-                new Order(5, security, Side.SELL, 200, 16000, broker1, shareholder),
-                new Order(6, security, Side.SELL, 200, 15800, broker1, shareholder),
-                new Order(7, security, Side.SELL, 200, 15810, broker1, shareholder),
-                new Order(8, security, BUY, 200, 15900, broker, shareholder),
-                new Order(9, security, BUY, 200, 15910, broker, shareholder),
-                new Order(10, security, BUY, 200, 15000, broker, shareholder));
-
-        orders.forEach(order -> orderBook.enqueue(order));
-        changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
-
-        Order order1 = new Order(20,security, SELL,200,15815,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
-
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, order1.getEntryTime(), SELL,
-                285, 15815, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
-
+        set_check_opening_price_status();
         changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
 
         Order order2 = new Order(21,security, BUY,100,15835,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
@@ -150,6 +154,29 @@ public class AuctionMatchingTest {
         verify(eventPublisher).publish(new OrderAcceptedEvent(1, 20));
         verify(eventPublisher).publish(new OrderAcceptedEvent(2, 21));
         verify(eventPublisher).publish(new OpeningPriceEvent("ABC", 15815, 100));
+    }
+
+    @Test
+    void check_opening_price_published_correctly_after_change_last_price_by_new_order_in_continues_state() {
+        set_check_opening_price_status();
+        changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.CONTINUOUS));
+
+        Order order2 = new Order(21,security, BUY,100,15835,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 21, order2.getEntryTime(), BUY,
+                100, 15835, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+        changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
+
+        Order order3 = new Order(22,security, BUY,77,15845,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 22, order3.getEntryTime(), BUY,
+                77, 15845, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+
+        verify(eventPublisher).publish(new OrderAcceptedEvent(1, 20));
+        verify(eventPublisher).publish(new OrderAcceptedEvent(2, 21));
+        verify(eventPublisher).publish(new OrderAcceptedEvent(3, 22));
+        verify(eventPublisher).publish(new OpeningPriceEvent("ABC", 15810, 400));
+        verify(eventPublisher).publish(new OpeningPriceEvent("ABC", 15815, 77));
     }
 
     @Test
