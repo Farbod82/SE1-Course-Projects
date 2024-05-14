@@ -69,6 +69,12 @@ public class OrderBook {
         queue.addFirst(order);
     }
 
+    public void pushBack(Order order) {
+        LinkedList<Order> queue = getQueue(order.getSide());
+        order.queue();
+        queue.add(order);
+    }
+
     public void restoreOrder(Order order) {
         removeByOrderId(order.getSide(), order.getOrderId());
         putBack(order);

@@ -104,7 +104,7 @@ public class Matcher {
     }
 
 
-    private LinkedList<MatchResult> auctionMatch(OrderBook orderBook , int openingPrice){
+    public LinkedList<MatchResult> auctionMatch(OrderBook orderBook , int openingPrice){
 
         LinkedList<Trade> trades = new LinkedList<>();
         LinkedList<MatchResult> matchResults = new LinkedList<>();
@@ -130,17 +130,17 @@ public class Matcher {
                     icebergOrder.decreaseQuantity(sellOrder.getQuantity());
                     icebergOrder.replenish();
                     if (icebergOrder.getQuantity() > 0)
-                        orderBook.putBack(icebergOrder);
+                        orderBook.pushBack(icebergOrder);
 
                 }
             } else {
                 sellOrder.decreaseQuantity(buyOrder.getQuantity());
                 orderBook.removeFirst(buyOrder.getSide());
                 if (buyOrder instanceof IcebergOrder icebergOrder) {
-                    icebergOrder.decreaseQuantity(sellOrder.getQuantity());
+                    icebergOrder.decreaseQuantity(buyOrder.getQuantity());
                     icebergOrder.replenish();
                     if (icebergOrder.getQuantity() > 0)
-                        orderBook.putBack(icebergOrder);
+                        orderBook.pushBack(icebergOrder);
 
                 }
             }
