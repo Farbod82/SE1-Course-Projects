@@ -9,6 +9,7 @@ import ir.ramtung.tinyme.messaging.EventPublisher;
 import ir.ramtung.tinyme.messaging.Message;
 import ir.ramtung.tinyme.messaging.event.*;
 import ir.ramtung.tinyme.messaging.request.ChangeMatchingStateRq;
+import ir.ramtung.tinyme.messaging.request.DeleteOrderRq;
 import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
 import ir.ramtung.tinyme.messaging.request.MatchingState;
 import ir.ramtung.tinyme.repository.BrokerRepository;
@@ -96,11 +97,10 @@ public class AuctionMatchingTest {
         orders.forEach(order -> orderBook.enqueue(order));
         changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
 
-        Order order1 = new Order(20,security, SELL,200,15815,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
+        Order order1 = new Order(20,security, SELL,285,15815,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
 
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, order1.getEntryTime(), SELL,
                 285, 15815, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
-
     }
 
     @Test
@@ -143,7 +143,8 @@ public class AuctionMatchingTest {
 
     @Test
     void check_opening_price_published_correctly_after_change_last_price_by_opening() {
-        set_check_opening_price_status();
+        set_check_opening_price_status();changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
+
         changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
 
         Order order2 = new Order(21,security, BUY,100,15835,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
@@ -178,6 +179,25 @@ public class AuctionMatchingTest {
         verify(eventPublisher).publish(new OpeningPriceEvent("ABC", 15810, 400));
         verify(eventPublisher).publish(new OpeningPriceEvent("ABC", 15815, 77));
     }
+
+
+    @Test
+    void check_delete_order_correctly_done_in_auction_matching(){
+        set_check_opening_price_status();
+
+        orderHandler.handleDeleteOrder(new DeleteOrderRq(2, security.getIsin(), Side.SELL, 7));
+        verify(eventPublisher).publish(new OrderDeletedEvent(2, 7));
+
+        Order order2 = new Order(21,security, BUY,100,15835,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 21, order2.getEntryTime(), BUY,
+                100, 15835, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+
+        verify(eventPublisher).publish(new OrderAcceptedEvent(1, 20));
+        verify(eventPublisher).publish(new OrderAcceptedEvent(3, 21));
+        verify(eventPublisher).publish(new OpeningPriceEvent("ABC", 15810, 400));
+        verify(eventPublisher).publish(new OpeningPriceEvent("ABC", 15815, 485));
+    }
+
 
     @Test
     void security_correctly_change_state(){
