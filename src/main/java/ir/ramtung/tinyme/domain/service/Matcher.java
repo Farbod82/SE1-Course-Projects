@@ -43,6 +43,7 @@ public class Matcher {
                     icebergOrder.replenish();
                     if (icebergOrder.getQuantity() > 0)
                         orderBook.enqueue(icebergOrder);
+
                 }
             } else {
                 matchingOrder.decreaseQuantity(newOrder.getQuantity());
@@ -104,9 +105,51 @@ public class Matcher {
         return result;
     }
 
-    private MatchResult auctionMatch(OrderBook orderBook , int openingPrice){
-        //to do
 
-        return null;
+    private LinkedList<MatchResult> auctionMatch(OrderBook orderBook , int openingPrice){
+
+        LinkedList<Trade> trades = new LinkedList<>();
+        LinkedList<MatchResult> matchResults = new LinkedList<>();
+        while (orderBook.hasOrderOfType(Side.BUY) &&  orderBook.hasOrderOfType(Side.SELL)) {
+            Order buyOrder = orderBook.getBuyQueue().getFirst();
+            Order sellOrder = orderBook.matchWithFirst(buyOrder);
+            if (sellOrder == null)
+                break;
+
+            Trade trade = new Trade(buyOrder.getSecurity(), openingPrice, Math.min(buyOrder.getQuantity(), sellOrder.getQuantity()), buyOrder, sellOrder);
+
+
+            trade.increaseSellersCredit();
+            trades.add(trade);
+            if(buyOrder.getPrice() > openingPrice){
+                trade.returnMoneyToBuyer();
+            }
+
+            if (buyOrder.getQuantity() >= sellOrder.getQuantity()) {
+                buyOrder.decreaseQuantity(sellOrder.getQuantity());
+                orderBook.removeFirst(sellOrder.getSide());
+                if (sellOrder instanceof IcebergOrder icebergOrder) {
+                    icebergOrder.decreaseQuantity(sellOrder.getQuantity());
+                    icebergOrder.replenish();
+                    if (icebergOrder.getQuantity() > 0)
+                        orderBook.putBack(icebergOrder);
+
+                }
+            } else {
+                sellOrder.decreaseQuantity(buyOrder.getQuantity());
+                orderBook.removeFirst(buyOrder.getSide());
+                if (buyOrder instanceof IcebergOrder icebergOrder) {
+                    icebergOrder.decreaseQuantity(sellOrder.getQuantity());
+                    icebergOrder.replenish();
+                    if (icebergOrder.getQuantity() > 0)
+                        orderBook.putBack(icebergOrder);
+
+                }
+            }
+            matchResults.add(MatchResult.executed(buyOrder, trades));
+        }
+        return  matchResults;
     }
+
+
 }

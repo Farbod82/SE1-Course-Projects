@@ -88,4 +88,7 @@ public class AuctionMatchingTest {
         IOP = orderBook.calculateIndicativeOpeningPrice(15000);
         assertThat(IOP).isEqualTo(15810);
     }
+
+
+
 }
