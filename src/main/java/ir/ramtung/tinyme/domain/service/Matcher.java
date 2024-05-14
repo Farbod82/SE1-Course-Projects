@@ -104,7 +104,7 @@ public class Matcher {
     }
 
 
-    public LinkedList<MatchResult> auctionMatch(OrderBook orderBook , int openingPrice){
+    public LinkedList<MatchResult> auctionMatch(OrderBook orderBook ,int openingPrice){
 
         LinkedList<Trade> trades = new LinkedList<>();
         LinkedList<MatchResult> matchResults = new LinkedList<>();

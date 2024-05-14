@@ -1,5 +1,6 @@
 package ir.ramtung.tinyme.domain.service;
 
+import ir.ramtung.tinyme.domain.entity.OrderBook;
 import ir.ramtung.tinyme.domain.entity.Security;
 import ir.ramtung.tinyme.messaging.EventPublisher;
 import ir.ramtung.tinyme.messaging.event.SecurityStateChangedEvent;
@@ -31,7 +32,9 @@ public class ChangeMatchStateHandler {
     public void handleChangeMatchingState(ChangeMatchingStateRq changeMatchingStateRq){
         Security security = securityRepository.findSecurityByIsin(changeMatchingStateRq.getSecurityIsin());
         if(security.isInAuctionMatchingState()){
-            //to do
+            OrderBook orderBook = security.getOrderBook();
+            orderBook.updateCurrentOpeningPriceAndMaxQuantity(security.getLatestPrice());
+            matcher.auctionMatch(orderBook, (int)orderBook.getOpeningPrice());
         }
         security.changeSecurityStatusTo(changeMatchingStateRq.getTargetState());
         eventPublisher.publish(new SecurityStateChangedEvent(LocalDateTime.now(),security.getIsin(),changeMatchingStateRq.getTargetState()));
