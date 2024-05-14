@@ -34,7 +34,7 @@ public class OrderHandler {
         this.matcher = matcher;
     }
 
-    public void findActivatedStopOrders(Security security){
+    public void publicActivatedStopOrders(Security security){
         LinkedList<OrderActivatedEvent> activatedOrdersEvents =  security.checkActivatedOrderExist();
         for(OrderActivatedEvent orderActivatedEvent: activatedOrdersEvents){
             eventPublisher.publish(orderActivatedEvent);
@@ -91,7 +91,9 @@ public class OrderHandler {
             Broker broker = brokerRepository.findBrokerById(enterOrderRq.getBrokerId());
             Shareholder shareholder = shareholderRepository.findShareholderById(enterOrderRq.getShareholderId());
 
-
+            if (security.isInAuctionMatchingState()){
+                validateEnterOrderRqInAuctionState(enterOrderRq);
+            }
 
             MatchResult matchResult;
 
@@ -113,12 +115,12 @@ public class OrderHandler {
 
     private void checkAllActivatedStopLimitOrders(Security security) {
         MatchResult matchResult;
-        findActivatedStopOrders(security);
+        publicActivatedStopOrders(security);
         while(security.hasAnyActiveStopOrder()){
             matchResult = security.runSingleStopOrder(matcher);
             EnterOrderRq stopOrderEnterOrderRq = security.getLastProcessedReqID();
             publishMatchOutComes(matchResult,stopOrderEnterOrderRq);
-            findActivatedStopOrders(security);
+            publicActivatedStopOrders(security);
         }
     }
 
@@ -140,6 +142,19 @@ public class OrderHandler {
         }
     }
 
+
+    private void validateEnterOrderRqInAuctionState(EnterOrderRq enterOrderRq) throws InvalidRequestException{
+        List<String> errors = new LinkedList<>();
+        if(enterOrderRq.getMinimumExecutionQuantity() > 0) {
+            errors.add(Message.MINIMUM_EXECUTION_QUANTITY_ORDER_NOT_ALLOWED_IN_AUCTION_MODE);
+        }
+        if(enterOrderRq.getStopPrice() > 0){
+            errors.add(Message.STOP_LIMIT_ORDER_NOT_ALLOWED_IN_AUCTION_MODE);
+        }
+        if (!errors.isEmpty())
+            throw new InvalidRequestException(errors);
+
+    }
     private void validateEnterOrderRq(EnterOrderRq enterOrderRq) throws InvalidRequestException {
         List<String> errors = new LinkedList<>();
         if (enterOrderRq.getQuantity() < enterOrderRq.getMinimumExecutionQuantity()){

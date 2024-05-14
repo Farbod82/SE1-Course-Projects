@@ -2,11 +2,14 @@ package ir.ramtung.tinyme.domain.service;
 
 import ir.ramtung.tinyme.domain.entity.Security;
 import ir.ramtung.tinyme.messaging.EventPublisher;
+import ir.ramtung.tinyme.messaging.event.SecurityStateChangedEvent;
 import ir.ramtung.tinyme.messaging.request.ChangeMatchingStateRq;
 import ir.ramtung.tinyme.repository.BrokerRepository;
 import ir.ramtung.tinyme.repository.SecurityRepository;
 import ir.ramtung.tinyme.repository.ShareholderRepository;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 
 
 @Service
@@ -25,12 +28,13 @@ public class ChangeMatchStateHandler {
         this.matcher = matcher;
     }
 
-    void handleChangeMatchingState(ChangeMatchingStateRq changeMatchingStateRq){
+    public void handleChangeMatchingState(ChangeMatchingStateRq changeMatchingStateRq){
         Security security = securityRepository.findSecurityByIsin(changeMatchingStateRq.getSecurityIsin());
         if(security.isInAuctionMatchingState()){
             //to do
         }
         security.changeSecurityStatusTo(changeMatchingStateRq.getTargetState());
+        eventPublisher.publish(new SecurityStateChangedEvent(LocalDateTime.now(),security.getIsin(),changeMatchingStateRq.getTargetState()));
     }
 
 

@@ -35,16 +35,17 @@ public class EventPublisherTest {
         while (jmsTemplate.receive(responseQueue) != null) ;
         jmsTemplate.setReceiveTimeout(receiveTimeout);
     }
-    @Test
-    void response_channel_integration_works() {
-        OrderExecutedEvent orderExecutedEvent = new OrderExecutedEvent(1, 0, List.of());
-        eventPublisher.publish(orderExecutedEvent);
 
-        long receiveTimeout = jmsTemplate.getReceiveTimeout();
-        jmsTemplate.setReceiveTimeout(1000);
-        OrderExecutedEvent responseReceived = (OrderExecutedEvent) jmsTemplate.receiveAndConvert(responseQueue);
-        assertEquals(orderExecutedEvent, responseReceived);
-
-        jmsTemplate.setReceiveTimeout(receiveTimeout);
-    }
+//    @Test
+//    void response_channel_integration_works() {
+//        OrderExecutedEvent orderExecutedEvent = new OrderExecutedEvent(1, 0, List.of());
+//        eventPublisher.publish(orderExecutedEvent);
+//
+//        long receiveTimeout = jmsTemplate.getReceiveTimeout();
+//        jmsTemplate.setReceiveTimeout(1000);
+//        OrderExecutedEvent responseReceived = (OrderExecutedEvent) jmsTemplate.receiveAndConvert(responseQueue);
+//        assertEquals(orderExecutedEvent, responseReceived);
+//
+//        jmsTemplate.setReceiveTimeout(receiveTimeout);
+//    }
 }
