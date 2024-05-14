@@ -9,6 +9,8 @@ public final class MatchResult {
     private final Order remainder;
     private final LinkedList<Trade> trades;
 
+    private final int openingPrice;
+
     public static MatchResult executed(Order remainder, List<Trade> trades) {
         return new MatchResult(MatchingOutcome.EXECUTED, remainder, new LinkedList<>(trades));
     }
@@ -28,13 +30,21 @@ public final class MatchResult {
         return new MatchResult(MatchingOutcome.STOP_LIMIT_ORDER_NOT_ACCEPTED, null, new LinkedList<>());
     }
     public static MatchResult queuedForAuction(int openingPrice){
-        return new MatchResult(MatchingOutcome.QUEUED_FOR_AUCTION, null, new LinkedList<>());
+        return new MatchResult(MatchingOutcome.QUEUED_FOR_AUCTION, null, new LinkedList<>(),openingPrice);
+    }
+
+    private MatchResult(MatchingOutcome outcome, Order remainder, LinkedList<Trade> trades, int openingPrice) {
+        this.outcome = outcome;
+        this.remainder = remainder;
+        this.trades = trades;
+        this.openingPrice = openingPrice;
     }
 
     private MatchResult(MatchingOutcome outcome, Order remainder, LinkedList<Trade> trades) {
         this.outcome = outcome;
         this.remainder = remainder;
         this.trades = trades;
+        this.openingPrice = 0;
     }
 
     public MatchingOutcome outcome() {

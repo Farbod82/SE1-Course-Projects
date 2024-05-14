@@ -11,8 +11,6 @@ import static java.lang.Math.abs;
 
 @Service
 public class Matcher {
-
-
     public MatchResult match(Order newOrder) {
 
         OrderBook orderBook = newOrder.getSecurity().getOrderBook();
