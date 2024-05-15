@@ -281,11 +281,10 @@ public class AuctionMatchingTest {
     }
 
     @Test
-    void twice_changing_matching_state(){
+    void twice_changing_matching_state_and_publishing_opening_price_event_after_that(){
         orders = Arrays.asList(
                 new Order(1, security, SELL, 200, 16000, broker1, shareholder),
                 new Order(2, security, BUY, 300, 16000, broker, shareholder));
-
         orders.forEach(order -> orderBook.enqueue(order));
         changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
 
@@ -296,7 +295,16 @@ public class AuctionMatchingTest {
 
         changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
         changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
-        verify(eventPublisher,times(1)).publish(new OpeningPriceEvent("ABC", 16000, 300));
+        Order order2 = new Order(4,security, BUY,285,15815,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
+        Order order3 = new Order(5,security, SELL,200,15800,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
 
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 4, order2.getEntryTime(), BUY,
+                285, 15815, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 5, order3.getEntryTime(), SELL,
+                285, 15800, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+        verify(eventPublisher,times(1)).publish(new OrderAcceptedEvent(1, 3));
+        verify(eventPublisher,times(1)).publish(new OrderAcceptedEvent(2, 4));
+        verify(eventPublisher,times(1)).publish(new OpeningPriceEvent("ABC", 16000, 300));
+        verify(eventPublisher,times(2)).publish(new OpeningPriceEvent("ABC", 0, 0));
     }
 }
