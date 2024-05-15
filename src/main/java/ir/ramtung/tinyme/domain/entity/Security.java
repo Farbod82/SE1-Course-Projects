@@ -68,17 +68,13 @@ public class Security {
             order = new Order(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
                     enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder, enterOrderRq.getEntryTime(), OrderStatus.NEW, enterOrderRq.getMinimumExecutionQuantity());
         }
-
-
         if (matchingState == MatchingState.CONTINUOUS) {
             return matcher.execute(order);
         }
         else{
-
             orderBook.enqueue(order);
-
-            // put there the opening price
-            return MatchResult.queuedForAuction(10);
+            HashMap<String, Long> openingPriceAndQuantity = orderBook.calcCurrentOpeningPriceAndMaxQuantity(latestPrice);
+            return MatchResult.queuedForAuction(openingPriceAndQuantity.get("price").intValue());
         }
     }
 
