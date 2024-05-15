@@ -262,7 +262,7 @@ public class Security {
         return !activeStopOrderList.isEmpty();
     }
 
-    public LinkedList<OrderActivatedEvent> checkActivatedOrderExist(){
+    public LinkedList<OrderActivatedEvent> activateStopOrders(){
         LinkedList<OrderActivatedEvent> activatedOrdersRecord = new LinkedList<>();
         LinkedList<Order> sortedActiveOrders = new LinkedList<>();
         for(Order order : stopOrderList){

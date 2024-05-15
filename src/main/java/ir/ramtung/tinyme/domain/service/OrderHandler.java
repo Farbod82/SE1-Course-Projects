@@ -34,8 +34,8 @@ public class OrderHandler {
         this.matcher = matcher;
     }
 
-    public void publicActivatedStopOrders(Security security){
-        LinkedList<OrderActivatedEvent> activatedOrdersEvents =  security.checkActivatedOrderExist();
+    public void publishActivatedStopOrders(Security security){
+        LinkedList<OrderActivatedEvent> activatedOrdersEvents =  security.activateStopOrders();
         for(OrderActivatedEvent orderActivatedEvent: activatedOrdersEvents){
             eventPublisher.publish(orderActivatedEvent);
         }
@@ -53,7 +53,6 @@ public class OrderHandler {
         else {
             eventPublisher.publish(new OrderUpdatedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
         }
-
 
         if(matchResult.outcome() == MatchingOutcome.STOP_LIMIT_ORDER_ACCEPTED){
             eventPublisher.publish(new OrderAcceptedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
@@ -118,12 +117,12 @@ public class OrderHandler {
 
     private void checkAllActivatedStopLimitOrders(Security security) {
         MatchResult matchResult;
-        publicActivatedStopOrders(security);
+        publishActivatedStopOrders(security);
         while(security.hasAnyActiveStopOrder()){
             matchResult = security.runSingleStopOrder(matcher);
             EnterOrderRq stopOrderEnterOrderRq = security.getLastProcessedReqID();
             publishMatchOutComes(matchResult,stopOrderEnterOrderRq);
-            publicActivatedStopOrders(security);
+            publishActivatedStopOrders(security);
         }
     }
 

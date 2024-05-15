@@ -149,7 +149,7 @@ public class Order {
     public void updateFromRequest(EnterOrderRq updateOrderRq) {
         if(updateOrderRq.getStopPrice() > 0){
             stopPrice  = updateOrderRq.getStopPrice();
-            }
+        }
 
         quantity = updateOrderRq.getQuantity();
         price = updateOrderRq.getPrice();
