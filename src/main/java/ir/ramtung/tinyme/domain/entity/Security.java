@@ -132,7 +132,7 @@ public class Security {
         Order order = orderBook.findByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
         Order unactivatedStopOrder = findUnactivatedStopOrderById(deleteOrderRq.getOrderId());
 
-        if(unactivatedStopOrder != null){
+        if(unactivatedStopOrder != null && matchingState == MatchingState.CONTINUOUS){
             stopOrderList.remove(unactivatedStopOrder);
             if(unactivatedStopOrder.getSide() == BUY){
                 unactivatedStopOrder.getBroker().increaseCreditBy(unactivatedStopOrder.getValue());
@@ -235,7 +235,7 @@ public class Security {
 
     public MatchResult updateOrder(EnterOrderRq updateOrderRq, Matcher matcher) throws InvalidRequestException {
 
-        if(findUnactivatedStopOrderById(updateOrderRq.getOrderId()) != null) {
+        if(findUnactivatedStopOrderById(updateOrderRq.getOrderId()) != null && matchingState == MatchingState.CONTINUOUS) {
             return updateUnactivatedStopLimitOrder(updateOrderRq, matcher);
         }
         else {
@@ -245,14 +245,13 @@ public class Security {
 
             return updateOrderBookOrders(updateOrderRq,matcher, order);
         }
-
-
     }
 
     private void deleteActivatedOrder(){
         Stream<Order> mustBeDelete =  stopOrderList.stream().filter(Order::isActive);
         stopOrderList.removeAll(mustBeDelete.toList());
     }
+
     private boolean mustBeActivated(Order order){
         if(!order.isActive() &&
                 ((order.getStopPrice() <= latestPrice && order.getSide() == BUY)
