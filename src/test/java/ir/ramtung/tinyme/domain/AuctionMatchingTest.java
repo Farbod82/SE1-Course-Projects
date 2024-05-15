@@ -23,8 +23,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import static ir.ramtung.tinyme.domain.entity.Side.BUY;
 import static ir.ramtung.tinyme.domain.entity.Side.SELL;
@@ -116,12 +115,12 @@ public class AuctionMatchingTest {
 
         orders.forEach(order -> orderBook.enqueue(order));
 
-        orderBook.updateCurrentOpeningPriceAndMaxQuantity(15850);
-        assertThat(orderBook.getOpeningPrice()).isEqualTo(15850);
-        orderBook.updateCurrentOpeningPriceAndMaxQuantity(16000);
-        assertThat(orderBook.getOpeningPrice()).isEqualTo(15900);
-        orderBook.updateCurrentOpeningPriceAndMaxQuantity(15000);
-        assertThat(orderBook.getOpeningPrice()).isEqualTo(15810);
+        HashMap<String, Long> priceAndQuantity =  orderBook.calcCurrentOpeningPriceAndMaxQuantity(15850);
+        assertThat(priceAndQuantity.get("price").intValue()).isEqualTo(15850);
+        HashMap<String, Long> priceAndQuantity1 =  orderBook.calcCurrentOpeningPriceAndMaxQuantity(16000);
+        assertThat(priceAndQuantity1.get("price").intValue()).isEqualTo(15900);
+        HashMap<String, Long> priceAndQuantity2 =  orderBook.calcCurrentOpeningPriceAndMaxQuantity(15000);
+        assertThat(priceAndQuantity2.get("price").intValue()).isEqualTo(15810);
     }
 
     @Test
@@ -282,7 +281,7 @@ public class AuctionMatchingTest {
     }
 
     @Test
-    void double_changing_matching_state(){
+    void twice_changing_matching_state(){
         orders = Arrays.asList(
                 new Order(1, security, SELL, 200, 16000, broker1, shareholder),
                 new Order(2, security, BUY, 300, 16000, broker, shareholder));
@@ -297,5 +296,7 @@ public class AuctionMatchingTest {
 
         changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
         changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
+        verify(eventPublisher,times(1)).publish(new OpeningPriceEvent("ABC", 16000, 300));
+
     }
 }

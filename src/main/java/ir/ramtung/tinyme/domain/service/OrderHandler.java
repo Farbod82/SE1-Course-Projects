@@ -14,6 +14,7 @@ import ir.ramtung.tinyme.repository.SecurityRepository;
 import ir.ramtung.tinyme.repository.ShareholderRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -63,8 +64,8 @@ public class OrderHandler {
         if (matchResult.outcome() == MatchingOutcome.QUEUED_FOR_AUCTION){
             Security security = securityRepository.findSecurityByIsin(enterOrderRq.getSecurityIsin());
             OrderBook orderBook = security.getOrderBook();
-            orderBook.updateCurrentOpeningPriceAndMaxQuantity(security.getLatestPrice());
-            eventPublisher.publish(new OpeningPriceEvent(enterOrderRq.getSecurityIsin(),orderBook.getOpeningPrice(), orderBook.getMaxQuantityInAuctionState()));
+            HashMap<String, Long> openingPriceAndQuantity = orderBook.calcCurrentOpeningPriceAndMaxQuantity(security.getLatestPrice());
+            eventPublisher.publish(new OpeningPriceEvent(enterOrderRq.getSecurityIsin(), openingPriceAndQuantity.get("price"), openingPriceAndQuantity.get("quantity")));
         }
     }
 

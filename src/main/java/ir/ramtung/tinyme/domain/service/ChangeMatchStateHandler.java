@@ -11,6 +11,9 @@ import ir.ramtung.tinyme.repository.ShareholderRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 
 @Service
@@ -33,13 +36,10 @@ public class ChangeMatchStateHandler {
         Security security = securityRepository.findSecurityByIsin(changeMatchingStateRq.getSecurityIsin());
         if(security.isInAuctionMatchingState()){
             OrderBook orderBook = security.getOrderBook();
-            orderBook.updateCurrentOpeningPriceAndMaxQuantity(security.getLatestPrice());
-            matcher.auctionMatch(orderBook, (int)orderBook.getOpeningPrice());
+            HashMap<String, Long> openingPriceAndQuantity = orderBook.calcCurrentOpeningPriceAndMaxQuantity(security.getLatestPrice());
+            matcher.auctionMatch(orderBook, openingPriceAndQuantity.get("price").intValue());
         }
         security.changeSecurityStatusTo(changeMatchingStateRq.getTargetState());
         eventPublisher.publish(new SecurityStateChangedEvent(LocalDateTime.now(),security.getIsin(),changeMatchingStateRq.getTargetState()));
     }
-
-
-
 }
