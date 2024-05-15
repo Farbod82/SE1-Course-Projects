@@ -109,17 +109,17 @@ public class OrderBook {
         return Math.min(sumSellQueue, sumBuyQueue);
     }
 
-    public long findMinimumPriceOfSellOrder(){
-        return sellQueue.stream().mapToLong(Order::getPrice).min().orElse(0);
+    public long findMaximumPriceOfSellOrder(){
+        return sellQueue.stream().mapToLong(Order::getPrice).max().orElse(0);
     }
 
-    public long findMaximumPriceOfBuyOrder(){
-        return buyQueue.stream().mapToLong(Order::getPrice).max().orElse(0);
+    public long findMinimumPriceOfBuyOrder(){
+        return buyQueue.stream().mapToLong(Order::getPrice).min().orElse(0);
     }
 
     public void updateCurrentOpeningPriceAndMaxQuantity(long lastTradeValue){
-        long minOfInterval = findMinimumPriceOfSellOrder();
-        long maxOfInterval = findMaximumPriceOfBuyOrder();
+        long maxOfInterval = findMaximumPriceOfSellOrder();
+        long minOfInterval = findMinimumPriceOfBuyOrder();
 
         List<Map.Entry<Long, Long>> pairsOfIOPAndQuantity = LongStream.rangeClosed(minOfInterval, maxOfInterval)
                 .mapToObj(num -> Map.entry(findQuantityOfAllTrades(num), num))
@@ -129,8 +129,10 @@ public class OrderBook {
                 .max(Map.Entry.<Long, Long>comparingByKey().reversed()
                         .thenComparingLong(entry -> Math.abs(entry.getValue() - lastTradeValue)).reversed()
                         .thenComparingLong(entry -> entry.getValue()));
-        openingPrice = priceAndMaxQuantityPair.get().getValue();
-        maxQuantityInAuctionState = priceAndMaxQuantityPair.get().getKey();
+        if(priceAndMaxQuantityPair.isPresent()) {
+            openingPrice = priceAndMaxQuantityPair.get().getValue();
+            maxQuantityInAuctionState = priceAndMaxQuantityPair.get().getKey();
+        }
     }
 
 }
