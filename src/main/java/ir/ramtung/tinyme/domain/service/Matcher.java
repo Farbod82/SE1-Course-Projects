@@ -123,18 +123,18 @@ public class Matcher {
             if (buyOrder.getQuantity() >= sellOrder.getQuantity()) {
                 buyOrder.decreaseQuantity(sellOrder.getQuantity());
                 orderBook.removeFirst(sellOrder.getSide());
-                handleAddIcebergOrderToOrderBook(orderBook , sellOrder);
+                addIcebergOrderToOrderBook(orderBook , sellOrder);
             } else {
                 sellOrder.decreaseQuantity(buyOrder.getQuantity());
                 orderBook.removeFirst(buyOrder.getSide());
-                handleAddIcebergOrderToOrderBook(orderBook , buyOrder);
+                addIcebergOrderToOrderBook(orderBook , buyOrder);
             }
             matchResults.add(MatchResult.executed(buyOrder, trades));
         }
         return  matchResults;
     }
 
-    private void handleAddIcebergOrderToOrderBook(OrderBook orderBook ,Order order){
+    private void addIcebergOrderToOrderBook(OrderBook orderBook ,Order order){
         if (order instanceof IcebergOrder icebergOrder) {
             icebergOrder.decreaseQuantity(order.getQuantity());
             icebergOrder.replenish();
