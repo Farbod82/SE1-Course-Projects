@@ -113,41 +113,35 @@ public class Matcher {
             Order sellOrder = orderBook.matchWithFirst(buyOrder);
             if (sellOrder == null)
                 break;
-
             Trade trade = new Trade(buyOrder.getSecurity(), openingPrice, Math.min(buyOrder.getQuantity(), sellOrder.getQuantity()), buyOrder, sellOrder);
-
 
             trade.increaseSellersCredit();
             trades.add(trade);
             if(buyOrder.getPrice() > openingPrice){
                 trade.returnMoneyToBuyer();
             }
-
             if (buyOrder.getQuantity() >= sellOrder.getQuantity()) {
                 buyOrder.decreaseQuantity(sellOrder.getQuantity());
                 orderBook.removeFirst(sellOrder.getSide());
-                if (sellOrder instanceof IcebergOrder icebergOrder) {
-                    icebergOrder.decreaseQuantity(sellOrder.getQuantity());
-                    icebergOrder.replenish();
-                    if (icebergOrder.getQuantity() > 0)
-                        orderBook.pushBack(icebergOrder);
-
-                }
+                handleAddIcebergOrderToOrderBook(orderBook , sellOrder);
             } else {
                 sellOrder.decreaseQuantity(buyOrder.getQuantity());
                 orderBook.removeFirst(buyOrder.getSide());
-                if (buyOrder instanceof IcebergOrder icebergOrder) {
-                    icebergOrder.decreaseQuantity(buyOrder.getQuantity());
-                    icebergOrder.replenish();
-                    if (icebergOrder.getQuantity() > 0)
-                        orderBook.pushBack(icebergOrder);
-
-                }
+                handleAddIcebergOrderToOrderBook(orderBook , buyOrder);
             }
             matchResults.add(MatchResult.executed(buyOrder, trades));
         }
         return  matchResults;
     }
 
+    private void handleAddIcebergOrderToOrderBook(OrderBook orderBook ,Order order){
+        if (order instanceof IcebergOrder icebergOrder) {
+            icebergOrder.decreaseQuantity(order.getQuantity());
+            icebergOrder.replenish();
+            if (icebergOrder.getQuantity() > 0)
+                orderBook.pushBack(icebergOrder);
+
+        }
+    }
 
 }
