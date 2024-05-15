@@ -113,6 +113,8 @@ public class Matcher {
             Order sellOrder = orderBook.matchWithFirst(buyOrder);
             if (sellOrder == null)
                 break;
+            if(sellOrder.getPrice() > openingPrice || buyOrder.getPrice() < openingPrice)
+                break;
             Trade trade = new Trade(buyOrder.getSecurity(), openingPrice, Math.min(buyOrder.getQuantity(), sellOrder.getQuantity()), buyOrder, sellOrder);
 
             trade.increaseSellersCredit();
