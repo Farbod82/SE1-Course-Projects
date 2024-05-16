@@ -1,7 +1,6 @@
 package ir.ramtung.tinyme.domain.service;
 
 import ir.ramtung.tinyme.domain.entity.*;
-import ir.ramtung.tinyme.messaging.request.MatchingState;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedList;
@@ -104,10 +103,10 @@ public class Matcher {
     }
 
 
-    public LinkedList<MatchResult> auctionMatch(OrderBook orderBook ,int openingPrice){
+    public MatchResult auctionMatch(OrderBook orderBook ,int openingPrice){
 
         LinkedList<Trade> trades = new LinkedList<>();
-        LinkedList<MatchResult> matchResults = new LinkedList<>();
+        MatchResult matchResults;
         while (orderBook.hasOrderOfType(Side.BUY) &&  orderBook.hasOrderOfType(Side.SELL)) {
             Order buyOrder = orderBook.getBuyQueue().getFirst();
             Order sellOrder = orderBook.matchWithFirst(buyOrder);
@@ -125,24 +124,22 @@ public class Matcher {
             if (buyOrder.getQuantity() >= sellOrder.getQuantity()) {
                 buyOrder.decreaseQuantity(sellOrder.getQuantity());
                 orderBook.removeFirst(sellOrder.getSide());
-                addIcebergOrderToOrderBook(orderBook , sellOrder);
+                handleAddingIcebergOrderToOrderBook(orderBook , sellOrder);
             } else {
                 sellOrder.decreaseQuantity(buyOrder.getQuantity());
                 orderBook.removeFirst(buyOrder.getSide());
-                addIcebergOrderToOrderBook(orderBook , buyOrder);
+                handleAddingIcebergOrderToOrderBook(orderBook , buyOrder);
             }
-            matchResults.add(MatchResult.executed(buyOrder, trades));
         }
-        return  matchResults;
+        return  MatchResult.executed(null, trades);
     }
 
-    private void addIcebergOrderToOrderBook(OrderBook orderBook ,Order order){
+    private void handleAddingIcebergOrderToOrderBook(OrderBook orderBook , Order order){
         if (order instanceof IcebergOrder icebergOrder) {
             icebergOrder.decreaseQuantity(order.getQuantity());
             icebergOrder.replenish();
             if (icebergOrder.getQuantity() > 0)
                 orderBook.pushBack(icebergOrder);
-
         }
     }
 
