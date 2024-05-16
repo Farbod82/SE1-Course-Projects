@@ -209,14 +209,14 @@ public class AuctionMatchingTest {
         orderHandler.handleDeleteOrder(new DeleteOrderRq(2, security.getIsin(), Side.SELL, 7));
         verify(eventPublisher).publish(new OrderDeletedEvent(2, 7));
 
-        Order order2 = new Order(21,security, BUY,100,15835,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
+        Order order2 = new Order(21,security, SELL,105,15803,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 21, order2.getEntryTime(), BUY,
-                100, 15835, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+                21, 15803, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
 
-        verify(eventPublisher).publish(new OrderAcceptedEvent(1, 20));
-        verify(eventPublisher).publish(new OrderAcceptedEvent(3, 21));
-        verify(eventPublisher).publish(new OpeningPriceEvent("ABC", 15810, 400));
-        verify(eventPublisher).publish(new OpeningPriceEvent("ABC", 15815, 485));
+        verify(eventPublisher,times(1)).publish(new OrderAcceptedEvent(1, 20));
+        verify(eventPublisher,times(1)).publish(new OrderAcceptedEvent(3, 21));
+        verify(eventPublisher,times(1)).publish(new OpeningPriceEvent("ABC", 15810, 400));
+        verify(eventPublisher,times(2)).publish(new OpeningPriceEvent("ABC", 15800, 205));
     }
 
     @Test
