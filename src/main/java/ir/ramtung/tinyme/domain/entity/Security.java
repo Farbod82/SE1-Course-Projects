@@ -241,9 +241,7 @@ public class Security {
         }
         else {
             Order order = orderBook.findByOrderId(updateOrderRq.getSide(), updateOrderRq.getOrderId());
-
             checkUpdateRequestExceptions(order ,updateOrderRq);
-
             return updateOrderBookOrders(updateOrderRq,matcher, order);
         }
     }
@@ -289,7 +287,7 @@ public class Security {
         return activatedOrdersRecord;
     }
 
-    public MatchResult runSingleStopOrder(Matcher matcher){
+    public MatchResult matchSingleStopOrder(Matcher matcher){
         Order order = activeStopOrderList.removeFirst();
         lastProcessedReqID = requestIDs.remove(order.getOrderId());
         if (order.getSide() == Side.SELL && !order.getShareholder().hasEnoughPositionsOn(this,orderBook.totalSellQuantityByShareholder(order.getShareholder()) + order.getQuantity())){
@@ -310,4 +308,16 @@ public class Security {
     public void changeSecurityStatusTo(MatchingState newMatchingState){
         matchingState = newMatchingState;
     }
+
+    public MatchResult executeOpeningProcess(Matcher matcher){
+        MatchResult matchResult = matcher.auctionMatch(orderBook,0);
+        return matchResult;
+    }
+
+    public void enqueueActivatedStopOrdersAfterAuction(){
+        for(Order order : activeStopOrderList){
+            orderBook.enqueue(order);
+        }
+    }
+
 }

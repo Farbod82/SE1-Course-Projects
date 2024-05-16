@@ -118,6 +118,7 @@ public class Matcher {
 
             trade.increaseSellersCredit();
             trades.add(trade);
+            buyOrder.getSecurity().setLatestCost(trade);
             if(buyOrder.getPrice() > openingPrice){
                 trade.returnMoneyToBuyer();
             }
@@ -131,6 +132,7 @@ public class Matcher {
                 handleAddingIcebergOrderToOrderBook(orderBook , buyOrder);
             }
         }
+
         return  MatchResult.executed(null, trades);
     }
 
