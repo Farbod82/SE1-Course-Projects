@@ -1,7 +1,7 @@
 package ir.ramtung.tinyme.domain.entity;
 
 import lombok.Getter;
-
+import java.util.HashMap;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
@@ -10,8 +10,6 @@ import java.util.stream.LongStream;
 public class OrderBook {
     private final LinkedList<Order> buyQueue;
     private final LinkedList<Order> sellQueue;
-    private long openingPrice;
-    private long maxQuantityInAuctionState;
 
     public OrderBook() {
         buyQueue = new LinkedList<>();
@@ -109,17 +107,17 @@ public class OrderBook {
         return Math.min(sumSellQueue, sumBuyQueue);
     }
 
-    public long findMinimumPriceOfSellOrder(){
-        return sellQueue.stream().mapToLong(Order::getPrice).min().orElse(0);
+    public Integer findMaximumPriceOfSellOrder(){
+        return sellQueue.stream().mapToInt(Order::getPrice).max().orElse(0);
     }
 
-    public long findMaximumPriceOfBuyOrder(){
-        return buyQueue.stream().mapToLong(Order::getPrice).max().orElse(0);
+    public long findMinimumPriceOfBuyOrder(){
+        return buyQueue.stream().mapToLong(Order::getPrice).min().orElse(0);
     }
 
-    public void updateCurrentOpeningPriceAndMaxQuantity(long lastTradeValue){
-        long minOfInterval = findMinimumPriceOfSellOrder();
-        long maxOfInterval = findMaximumPriceOfBuyOrder();
+    public HashMap<String, Long> calcCurrentOpeningPriceAndMaxQuantity(long lastTradeValue){
+        Integer maxOfInterval = findMaximumPriceOfSellOrder();
+        long minOfInterval = findMinimumPriceOfBuyOrder();
 
         List<Map.Entry<Long, Long>> pairsOfIOPAndQuantity = LongStream.rangeClosed(minOfInterval, maxOfInterval)
                 .mapToObj(num -> Map.entry(findQuantityOfAllTrades(num), num))
@@ -129,8 +127,17 @@ public class OrderBook {
                 .max(Map.Entry.<Long, Long>comparingByKey().reversed()
                         .thenComparingLong(entry -> Math.abs(entry.getValue() - lastTradeValue)).reversed()
                         .thenComparingLong(entry -> entry.getValue()));
-        openingPrice = priceAndMaxQuantityPair.get().getValue();
-        maxQuantityInAuctionState = priceAndMaxQuantityPair.get().getKey();
+
+        HashMap<String, Long> result = new HashMap<String, Long>();
+        if(priceAndMaxQuantityPair.isPresent()) {
+            result.put("price", (Long) priceAndMaxQuantityPair.get().getValue());
+            result.put("quantity", (Long) priceAndMaxQuantityPair.get().getKey());
+        }
+        else{
+            result.put("price", 0L);
+            result.put("quantity", 0L);
+        }
+        return result;
     }
 
 }

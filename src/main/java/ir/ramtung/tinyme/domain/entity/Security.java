@@ -68,17 +68,13 @@ public class Security {
             order = new Order(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
                     enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder, enterOrderRq.getEntryTime(), OrderStatus.NEW, enterOrderRq.getMinimumExecutionQuantity());
         }
-
-
         if (matchingState == MatchingState.CONTINUOUS) {
             return matcher.execute(order);
         }
         else{
-
             orderBook.enqueue(order);
-
-            // put there the opening price
-            return MatchResult.queuedForAuction(10);
+            HashMap<String, Long> openingPriceAndQuantity = orderBook.calcCurrentOpeningPriceAndMaxQuantity(latestPrice);
+            return MatchResult.queuedForAuction(openingPriceAndQuantity.get("price").intValue());
         }
     }
 
@@ -136,7 +132,7 @@ public class Security {
         Order order = orderBook.findByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
         Order unactivatedStopOrder = findUnactivatedStopOrderById(deleteOrderRq.getOrderId());
 
-        if(unactivatedStopOrder != null){
+        if(unactivatedStopOrder != null && matchingState == MatchingState.CONTINUOUS){
             stopOrderList.remove(unactivatedStopOrder);
             if(unactivatedStopOrder.getSide() == BUY){
                 unactivatedStopOrder.getBroker().increaseCreditBy(unactivatedStopOrder.getValue());
@@ -220,19 +216,26 @@ public class Security {
             order.markAsNew();
 
         orderBook.removeByOrderId(updateOrderRq.getSide(), updateOrderRq.getOrderId());
-        MatchResult matchResult = matcher.execute(order);
-        if (matchResult.outcome() != MatchingOutcome.EXECUTED) {
-            orderBook.enqueue(originalOrder);
-            if (updateOrderRq.getSide() == BUY) {
-                originalOrder.getBroker().decreaseCreditBy(originalOrder.getValue());
+
+        if(matchingState == MatchingState.CONTINUOUS) {
+            MatchResult matchResult = matcher.execute(order);
+            if (matchResult.outcome() != MatchingOutcome.EXECUTED) {
+                orderBook.enqueue(originalOrder);
+                if (updateOrderRq.getSide() == BUY) {
+                    originalOrder.getBroker().decreaseCreditBy(originalOrder.getValue());
+                }
             }
+            return matchResult;
         }
-        return matchResult;
+        else{
+            HashMap<String, Long> openingPriceAndQuantity = orderBook.calcCurrentOpeningPriceAndMaxQuantity(latestPrice);
+            return MatchResult.queuedForAuction(openingPriceAndQuantity.get("price").intValue());
+        }
     }
 
     public MatchResult updateOrder(EnterOrderRq updateOrderRq, Matcher matcher) throws InvalidRequestException {
 
-        if(findUnactivatedStopOrderById(updateOrderRq.getOrderId()) != null) {
+        if(findUnactivatedStopOrderById(updateOrderRq.getOrderId()) != null && matchingState == MatchingState.CONTINUOUS) {
             return updateUnactivatedStopLimitOrder(updateOrderRq, matcher);
         }
         else {
@@ -242,14 +245,13 @@ public class Security {
 
             return updateOrderBookOrders(updateOrderRq,matcher, order);
         }
-
-
     }
 
     private void deleteActivatedOrder(){
         Stream<Order> mustBeDelete =  stopOrderList.stream().filter(Order::isActive);
         stopOrderList.removeAll(mustBeDelete.toList());
     }
+
     private boolean mustBeActivated(Order order){
         if(!order.isActive() &&
                 ((order.getStopPrice() <= latestPrice && order.getSide() == BUY)

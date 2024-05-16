@@ -23,12 +23,12 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import static ir.ramtung.tinyme.domain.entity.Side.BUY;
 import static ir.ramtung.tinyme.domain.entity.Side.SELL;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @SpringBootTest
@@ -106,28 +106,32 @@ public class AuctionMatchingTest {
     @Test
     void check_correct_indicative_opening_price() {
         orders = Arrays.asList(
+                new Order(5, security, Side.SELL, 200, 16000, broker1, shareholder),
                 new Order(6, security, Side.SELL, 200, 15800, broker1, shareholder),
                 new Order(7, security, Side.SELL, 200, 15810, broker1, shareholder),
-                new Order(6, security, BUY, 200, 15900, broker, shareholder),
-                new Order(7, security, BUY, 200, 15910, broker, shareholder));
+                new Order(8, security, BUY, 200, 15900, broker, shareholder),
+                new Order(9, security, BUY, 200, 15910, broker, shareholder),
+                new Order(10, security, BUY, 200, 15000, broker, shareholder));
 
         orders.forEach(order -> orderBook.enqueue(order));
 
-        orderBook.updateCurrentOpeningPriceAndMaxQuantity(15850);
-        assertThat(orderBook.getOpeningPrice()).isEqualTo(15850);
-        orderBook.updateCurrentOpeningPriceAndMaxQuantity(16000);
-        assertThat(orderBook.getOpeningPrice()).isEqualTo(15900);
-        orderBook.updateCurrentOpeningPriceAndMaxQuantity(15000);
-        assertThat(orderBook.getOpeningPrice()).isEqualTo(15810);
+        HashMap<String, Long> priceAndQuantity =  orderBook.calcCurrentOpeningPriceAndMaxQuantity(15850);
+        assertThat(priceAndQuantity.get("price").intValue()).isEqualTo(15850);
+        HashMap<String, Long> priceAndQuantity1 =  orderBook.calcCurrentOpeningPriceAndMaxQuantity(16000);
+        assertThat(priceAndQuantity1.get("price").intValue()).isEqualTo(15900);
+        HashMap<String, Long> priceAndQuantity2 =  orderBook.calcCurrentOpeningPriceAndMaxQuantity(15000);
+        assertThat(priceAndQuantity2.get("price").intValue()).isEqualTo(15810);
     }
 
     @Test
     void check_opening_price_published_correctly() {
         orders = Arrays.asList(
+                new Order(5, security, Side.SELL, 200, 16000, broker1, shareholder),
                 new Order(6, security, Side.SELL, 200, 15800, broker1, shareholder),
                 new Order(7, security, Side.SELL, 200, 15810, broker1, shareholder),
-                new Order(6, security, BUY, 200, 15900, broker, shareholder),
-                new Order(7, security, BUY, 200, 15910, broker, shareholder));
+                new Order(8, security, BUY, 200, 15900, broker, shareholder),
+                new Order(9, security, BUY, 200, 15910, broker, shareholder),
+                new Order(10, security, BUY, 200, 15000, broker, shareholder));
 
         orders.forEach(order -> orderBook.enqueue(order));
         changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
@@ -137,8 +141,8 @@ public class AuctionMatchingTest {
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, order1.getEntryTime(), SELL,
                 285, 15815, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
 
-        verify(eventPublisher).publish(new OrderAcceptedEvent(1, 20));
-        verify(eventPublisher).publish(new OpeningPriceEvent("ABC", 15810, 400));
+        verify(eventPublisher,times(1)).publish(new OrderAcceptedEvent(1, 20));
+        verify(eventPublisher,times(1)).publish(new OpeningPriceEvent("ABC", 15810, 400));
     }
 
     @Test
@@ -151,9 +155,9 @@ public class AuctionMatchingTest {
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 21, order2.getEntryTime(), BUY,
                 100, 15835, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
 
-        verify(eventPublisher).publish(new OrderAcceptedEvent(1, 20));
-        verify(eventPublisher).publish(new OrderAcceptedEvent(2, 21));
-        verify(eventPublisher).publish(new OpeningPriceEvent("ABC", 15815, 100));
+        verify(eventPublisher,times(1)).publish(new OrderAcceptedEvent(1, 20));
+        verify(eventPublisher,times(1)).publish(new OrderAcceptedEvent(2, 21));
+        verify(eventPublisher,times(1)).publish(new OpeningPriceEvent("ABC", 15815, 100));
     }
 
     @Test
@@ -172,11 +176,11 @@ public class AuctionMatchingTest {
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 22, order3.getEntryTime(), BUY,
                 77, 15845, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
 
-        verify(eventPublisher).publish(new OrderAcceptedEvent(1, 20));
-        verify(eventPublisher).publish(new OrderAcceptedEvent(2, 21));
-        verify(eventPublisher).publish(new OrderAcceptedEvent(3, 22));
-        verify(eventPublisher).publish(new OpeningPriceEvent("ABC", 15810, 400));
-        verify(eventPublisher).publish(new OpeningPriceEvent("ABC", 15815, 77));
+        verify(eventPublisher,times(1)).publish(new OrderAcceptedEvent(1, 20));
+        verify(eventPublisher,times(1)).publish(new OrderAcceptedEvent(2, 21));
+        verify(eventPublisher,times(1)).publish(new OrderAcceptedEvent(3, 22));
+        verify(eventPublisher,times(1)).publish(new OpeningPriceEvent("ABC", 15810, 400));
+        verify(eventPublisher,times(1)).publish(new OpeningPriceEvent("ABC", 15815, 77));
     }
 
     @Test
@@ -212,7 +216,6 @@ public class AuctionMatchingTest {
         verify(eventPublisher).publish(new OpeningPriceEvent("ABC", 15815, 485));
     }
 
-
     @Test
     void security_correctly_change_state(){
         changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
@@ -222,6 +225,7 @@ public class AuctionMatchingTest {
         changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.CONTINUOUS));
         assertThat(security.isInAuctionMatchingState()).isEqualTo(false);
     }
+
     @Test
     void check_auction_match_with_given_opening_price(){
         orders = Arrays.asList(
@@ -244,7 +248,7 @@ public class AuctionMatchingTest {
         changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 11, LocalDateTime.now(), Side.BUY,
                 500, 15805, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 200));
-        verify(eventPublisher).publish(new OrderRejectedEvent(1,11,List.of(Message.ORDER_WITH_MINIMUM_EXECUTION_QUANTITY_NOT_ALLOWED_IN_AUCTION_MODE)));
+        verify(eventPublisher,times(1)).publish(new OrderRejectedEvent(1,11,List.of(Message.ORDER_WITH_MINIMUM_EXECUTION_QUANTITY_NOT_ALLOWED_IN_AUCTION_MODE)));
         assertThat(security.getOrderBook().getBuyQueue()).isEmpty();
     }
 
@@ -253,7 +257,7 @@ public class AuctionMatchingTest {
         changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 11, LocalDateTime.now(), Side.BUY,
                 500, 15805, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 200));
-        verify(eventPublisher).publish(new OrderRejectedEvent(1,11,List.of(Message.STOP_LIMIT_ORDER_NOT_ALLOWED_IN_AUCTION_MODE)));
+        verify(eventPublisher,times(1)).publish(new OrderRejectedEvent(1,11,List.of(Message.STOP_LIMIT_ORDER_NOT_ALLOWED_IN_AUCTION_MODE)));
         assertThat(security.getOrderBook().getBuyQueue()).isEmpty();
     }
 
@@ -274,5 +278,33 @@ public class AuctionMatchingTest {
         assertThat(security.getOrderBook().getBuyQueue().size()).isEqualTo(1);
         assertThat(security.getOrderBook().getBuyQueue().getFirst().getOrderId()).isEqualTo(3);
         assertThat(security.getOrderBook().getSellQueue().size()).isEqualTo(0);
+    }
+
+    @Test
+    void twice_changing_matching_state_and_publishing_opening_price_event_after_that(){
+        orders = Arrays.asList(
+                new Order(1, security, SELL, 200, 16000, broker1, shareholder),
+                new Order(2, security, BUY, 300, 16000, broker, shareholder));
+        orders.forEach(order -> orderBook.enqueue(order));
+        changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
+
+        Order order1 = new Order(3,security, SELL,100,16000,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 3, order1.getEntryTime(), SELL,
+                100, 16000, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+
+        changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
+        changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
+        Order order2 = new Order(4,security, BUY,285,15815,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
+        Order order3 = new Order(5,security, SELL,200,15800,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 4, order2.getEntryTime(), BUY,
+                285, 15815, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 5, order3.getEntryTime(), SELL,
+                285, 15800, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+        verify(eventPublisher,times(1)).publish(new OrderAcceptedEvent(1, 3));
+        verify(eventPublisher,times(1)).publish(new OrderAcceptedEvent(2, 4));
+        verify(eventPublisher,times(1)).publish(new OpeningPriceEvent("ABC", 16000, 300));
+        verify(eventPublisher,times(2)).publish(new OpeningPriceEvent("ABC", 0, 0));
     }
 }
