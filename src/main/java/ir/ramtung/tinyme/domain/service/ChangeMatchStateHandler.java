@@ -75,16 +75,16 @@ public class ChangeMatchStateHandler {
             }
             else if(changeMatchingStateRq.getTargetState() == MatchingState.AUCTION){
                 matchOutcomePublisher.publishActivatedStopOrders(security);
+                boolean anyActivatedOrderExisted = security.hasAnyActiveStopOrder();
                 security.enqueueActivatedStopOrdersAfterAuction();
                 openingPriceAndQuantity = orderBook.calcCurrentOpeningPriceAndMaxQuantity(security.getLatestPrice());
-                eventPublisher.publish(new OpeningPriceEvent(security.getIsin(),openingPriceAndQuantity.get("price"),openingPriceAndQuantity.get("quantity")));
+                if (anyActivatedOrderExisted) {
+                    eventPublisher.publish(new OpeningPriceEvent(security.getIsin(), openingPriceAndQuantity.get("price"), openingPriceAndQuantity.get("quantity")));
+                }
             }
 
         }
         security.changeSecurityStatusTo(changeMatchingStateRq.getTargetState());
         eventPublisher.publish(new SecurityStateChangedEvent(LocalDateTime.now(),security.getIsin(),changeMatchingStateRq.getTargetState()));
     }
-
-
-
 }
