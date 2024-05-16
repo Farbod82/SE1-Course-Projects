@@ -92,17 +92,20 @@ public class Matcher {
             order.resetMinimumExecutionQuantity();
             order.getSecurity().getOrderBook().enqueue(result.remainder());
         }
+        changeShareholdersPosition(result);
+        if (!result.trades().isEmpty())
+            order.getSecurity().setLatestCost(result.trades().getLast());
+        return result;
+    }
+
+    private void changeShareholdersPosition(MatchResult result){
         if (!result.trades().isEmpty()) {
             for (Trade trade : result.trades()) {
                 trade.getBuy().getShareholder().incPosition(trade.getSecurity(), trade.getQuantity());
                 trade.getSell().getShareholder().decPosition(trade.getSecurity(), trade.getQuantity());
             }
-            order.getSecurity().setLatestCost(result.trades().getLast());
         }
-        return result;
     }
-
-
     public MatchResult auctionMatch(OrderBook orderBook ,int openingPrice){
 
         LinkedList<Trade> trades = new LinkedList<>();
@@ -132,8 +135,9 @@ public class Matcher {
                 handleAddingIcebergOrderToOrderBook(orderBook , buyOrder);
             }
         }
-
-        return  MatchResult.executed(null, trades);
+        MatchResult result = MatchResult.executed(null, trades);
+        changeShareholdersPosition(result);
+        return  result;
     }
 
     private void handleAddingIcebergOrderToOrderBook(OrderBook orderBook , Order order){
