@@ -118,6 +118,7 @@ public class Matcher {
 
             trade.increaseSellersCredit();
             trades.add(trade);
+            buyOrder.getSecurity().setLatestCost(trade);
             if(buyOrder.getPrice() > openingPrice){
                 trade.returnMoneyToBuyer();
             }
