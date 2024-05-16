@@ -97,10 +97,10 @@ public class AuctionMatchingTest {
         orders.forEach(order -> orderBook.enqueue(order));
         changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
 
-        Order order1 = new Order(20,security, SELL,285,15815,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
+        Order order1 = new Order(20,security, SELL,5,15799,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
 
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, order1.getEntryTime(), SELL,
-                285, 15815, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+                5, 15799, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
     }
 
     @Test
@@ -187,16 +187,19 @@ public class AuctionMatchingTest {
     void check_update_order_correctly_done_in_auction_matching(){
         set_check_opening_price_status();
 
-        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(2, "ABC", 7, LocalDateTime.now(), Side.SELL, 2, 15801, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(20, "ABC", 7, LocalDateTime.now(), Side.SELL, 2, 15801, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0));
         Order order2 = new Order(21,security, BUY,100,15835,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
 
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 21, order2.getEntryTime(), BUY,
-                100, 15835, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 21, order2.getEntryTime(), SELL,
+                103, 15803, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
 
-        verify(eventPublisher).publish(new OrderAcceptedEvent(1, 20));
-        verify(eventPublisher).publish(new OpeningPriceEvent("ABC", 15810, 400));
-        // Ambiguity in domain
-        //        verify(eventPublisher).publish(new OpeningPriceEvent("ABC", 456, 3546));
+
+        verify(eventPublisher,times(1)).publish(new OrderUpdatedEvent(20, 7));
+        verify(eventPublisher,times(1)).publish(new OrderAcceptedEvent(1, 20));
+        verify(eventPublisher,times(1)).publish(new OrderAcceptedEvent(3, 21));
+        verify(eventPublisher,times(1)).publish(new OpeningPriceEvent("ABC", 15810, 400));
+        verify(eventPublisher,times(1)).publish(new OpeningPriceEvent("ABC", 15801, 207));
+        verify(eventPublisher,times(1)).publish(new OpeningPriceEvent("ABC", 15803, 207+103));
     }
 
     @Test
