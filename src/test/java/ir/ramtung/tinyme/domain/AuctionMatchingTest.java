@@ -324,12 +324,12 @@ public class AuctionMatchingTest {
         orders.forEach(order -> security.getOrderBook().enqueue(order));
         int opening_price  = security.getOrderBook().calcCurrentOpeningPriceAndMaxQuantity((int) 16500).get("price").intValue();
         assertThat(opening_price).isEqualTo(15600);
-        var matchResults = matcher.auctionMatch(security.getOrderBook() , 15550);
+        var matchResults = matcher.auctionMatch(security.getOrderBook() , opening_price);
         assertThat(broker.getCredit()).isEqualTo(100_000_000L + 304 * (15700 - 15600));
         assertThat(broker1.getCredit()).isEqualTo(100_000_000L + 344 * (15600));
-        assertThat(security.getOrderBook().getBuyQueue().size()).isEqualTo(3);
-//        assertThat(security.getOrderBook().getBuyQueue().getFirst().getOrderId()).isEqualTo(3);
-//        assertThat(security.getOrderBook().getSellQueue().size()).isEqualTo(0);
+        assertThat(security.getOrderBook().getBuyQueue().size()).isEqualTo(2);
+        assertThat(security.getOrderBook().getBuyQueue().getFirst().getOrderId()).isEqualTo(2);
+        assertThat(security.getOrderBook().getSellQueue().size()).isEqualTo(1);
 
     }
 
