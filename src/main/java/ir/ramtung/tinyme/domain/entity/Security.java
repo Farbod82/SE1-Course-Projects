@@ -228,6 +228,7 @@ public class Security {
             return matchResult;
         }
         else{
+            orderBook.enqueue(order);
             HashMap<String, Long> openingPriceAndQuantity = orderBook.calcCurrentOpeningPriceAndMaxQuantity(latestPrice);
             return MatchResult.queuedForAuction(openingPriceAndQuantity.get("price").intValue());
         }
