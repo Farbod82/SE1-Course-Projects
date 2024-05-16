@@ -65,7 +65,6 @@ public class ChangeMatchStateHandler {
         if(security.isInAuctionMatchingState()){
             OrderBook orderBook = security.getOrderBook();
             HashMap<String, Long> openingPriceAndQuantity = orderBook.calcCurrentOpeningPriceAndMaxQuantity(security.getLatestPrice());
-            matcher.auctionMatch(orderBook, openingPriceAndQuantity.get("price").intValue());
             MatchResult matchResult = security.executeOpeningProcess(matcher);
             for (Trade trade : matchResult.trades()){
                 eventPublisher.publish(new TradeEvent(security.getIsin(),trade.getPrice(),trade.getQuantity(),trade.getBuy().getOrderId(),trade.getSell().getOrderId()));

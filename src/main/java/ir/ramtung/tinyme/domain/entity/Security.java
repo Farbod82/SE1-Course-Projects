@@ -310,7 +310,8 @@ public class Security {
     }
 
     public MatchResult executeOpeningProcess(Matcher matcher){
-        MatchResult matchResult = matcher.auctionMatch(orderBook,0);
+        int updatedOpeningPrice = orderBook.calcCurrentOpeningPriceAndMaxQuantity(latestPrice).get("price").intValue();
+        MatchResult matchResult = matcher.auctionMatch(orderBook,updatedOpeningPrice);
         return matchResult;
     }
 

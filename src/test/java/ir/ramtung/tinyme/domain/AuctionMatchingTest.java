@@ -370,4 +370,47 @@ public class AuctionMatchingTest {
 
     }
 
+
+
+    @Test
+    void check_if_stop_order_limits_get_activated_after_auction_to_auction(){
+        orders = Arrays.asList(
+                new Order(3, security, Side.BUY, 300, 15500, broker, shareholder),
+                new Order(2, security, Side.BUY, 43, 15600, broker, shareholder),
+                new Order(1, security, Side.BUY, 2, 15700, broker, shareholder),
+                new Order(10, security, Side.SELL, 340, 15500, broker1, shareholder),
+                new Order(9, security, Side.SELL, 4, 15600, broker1, shareholder),
+                new Order(8, security, Side.SELL, 100, 15700, broker1, shareholder)
+        );
+        orders.forEach(order -> security.getOrderBook().enqueue(order));
+
+        Order order1 = new Order(20,security, SELL,1,15700,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW);
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, order1.getEntryTime(), SELL,
+                1, 15700, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+
+        Order order2 = new Order(21,security, SELL,3,15900,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW);
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 21, order2.getEntryTime(), SELL,
+                300, 15500, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15600));
+
+        changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
+
+        Order order3 = new Order(22,security, SELL,5,15900,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW);
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 22, order2.getEntryTime(), SELL,
+                5, 15900, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+
+//        verify(eventPublisher,times(1)).publish(new SecurityStateChangedEvent(LocalDateTime.now(),"ABC",MatchingState.AUCTION));
+        verify(eventPublisher,times(1)).publish(new OrderAcceptedEvent(3,22));
+        verify(eventPublisher,times(1)).publish(new OpeningPriceEvent("ABC",15500,340));
+
+        changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
+        verify(eventPublisher,times(1)).publish(new TradeEvent("ABC",15500,1,1,10));
+        verify(eventPublisher,times(1)).publish(new TradeEvent("ABC",15500,43,2,10));
+        verify(eventPublisher,times(1)).publish(new TradeEvent("ABC",15500,296,3,10));
+
+        verify(eventPublisher,times(1)).publish(new OrderActivatedEvent(2,21));
+        verify(eventPublisher,times(1)).publish(new OpeningPriceEvent("ABC",15500,4));
+        assertThat(security.getStopOrderList()).isEmpty();
+
+    }
+
 }
