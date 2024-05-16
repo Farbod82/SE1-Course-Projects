@@ -333,4 +333,27 @@ public class AuctionMatchingTest {
 
     }
 
+
+    @Test
+    void test_actionMatch_with_equal_min_and_max_of_buy_price_and_sell_price(){
+        orders = Arrays.asList(
+                new Order(2, security, Side.BUY, 43, 15600, broker, shareholder),
+                new Order(10, security, Side.SELL, 4, 15500, broker1, shareholder),
+                new Order(3, security, Side.BUY, 100, 15500, broker, shareholder),
+                new Order(8, security, Side.SELL, 100, 15700, broker1, shareholder),
+                new Order(1, security, Side.BUY, 304, 15700, broker, shareholder),
+                new Order(9, security, Side.SELL, 340, 15600, broker1, shareholder)
+        );
+        orders.forEach(order -> security.getOrderBook().enqueue(order));
+        int opening_price  = security.getOrderBook().calcCurrentOpeningPriceAndMaxQuantity((int) 16500).get("price").intValue();
+        assertThat(opening_price).isEqualTo(15600);
+        var matchResults = matcher.auctionMatch(security.getOrderBook() , opening_price);
+        assertThat(broker.getCredit()).isEqualTo(100_000_000L + 304 * (15700 - 15600));
+        assertThat(broker1.getCredit()).isEqualTo(100_000_000L + 344 * (15600));
+        assertThat(security.getOrderBook().getBuyQueue().size()).isEqualTo(2);
+        assertThat(security.getOrderBook().getBuyQueue().getFirst().getOrderId()).isEqualTo(2);
+        assertThat(security.getOrderBook().getSellQueue().size()).isEqualTo(1);
+
+    }
+
 }
