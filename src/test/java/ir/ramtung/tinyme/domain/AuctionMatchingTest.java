@@ -508,4 +508,39 @@ public class AuctionMatchingTest {
         verify(eventPublisher,times(1)).publish(new OrderExecutedEvent(2,21,List.of(new TradeDTO(trade1))));
         assertThat(security.getStopOrderList()).isEmpty();
     }
+
+    @Test
+    void test_change_position_after_auctionMatch(){
+        Shareholder shareholder2 = Shareholder.builder().shareholderId(2).build();
+        shareholder2.incPosition(security, 100_000_000_0);
+        shareholderRepository.addShareholder(shareholder2);
+        Shareholder shareholder3 = Shareholder.builder().shareholderId(3).build();
+        shareholder3.incPosition(security, 100_000_000_0);
+        shareholderRepository.addShareholder(shareholder2);
+
+        orders = Arrays.asList(
+                new Order(2, security, Side.BUY, 43, 15600, broker, shareholder),
+                new Order(1, security, Side.BUY, 2, 15700, broker, shareholder),
+                new Order(10, security, Side.SELL, 41, 15500, broker1, shareholder3),
+                new Order(9, security, Side.SELL, 4, 15600, broker1, shareholder2),
+                new Order(8, security, Side.SELL, 100, 15700, broker1, shareholder2)
+        );
+//        Order order4 = new Order(3, security, Side.BUY, 300, 15500, broker, shareholder);
+//        security.getOrderBook().enqueue(order4);
+        orders.forEach(order -> security.getOrderBook().enqueue(order));
+
+        Order order1 = new Order(20,security, SELL,1,15700,broker1,shareholder2,LocalDateTime.now(),OrderStatus.NEW);
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, order1.getEntryTime(), SELL,
+                1, 15700, broker1.getBrokerId(), shareholder2.getShareholderId(), 0, 0, 0));
+
+        assertThat(security.getLatestPrice()).isEqualTo(15700);
+        assertThat(shareholder2.getPositions().get(security)).isEqualTo(1000_000_000 - 1);
+        assertThat(shareholder.getPositions().get(security)).isEqualTo(1000_000_000 + 1);
+        changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
+        changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.CONTINUOUS));
+        assertThat(shareholder2.getPositions().get(security)).isEqualTo(1000_000_000 - 1 - 3);
+        assertThat(shareholder.getPositions().get(security)).isEqualTo(1000_000_000 + 45);
+        assertThat(shareholder3.getPositions().get(security)).isEqualTo(1000_000_000 - 41);
+
+    }
 }
