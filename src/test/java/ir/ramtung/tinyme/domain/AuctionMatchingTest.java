@@ -371,6 +371,22 @@ public class AuctionMatchingTest {
     }
 
 
+    @Test
+    void check_auction_match_with_equal_quantity(){
+        orders = Arrays.asList(
+                new Order(1, security, Side.BUY, 340, 15700, broker, shareholder),
+                new Order(2, security, Side.BUY, 43, 15600, broker, shareholder),
+                new Order(9, security, Side.SELL, 340, 15400, broker1, shareholder),
+                new Order(10, security, Side.SELL, 43, 15500, broker1, shareholder)
+        );
+        orders.forEach(order -> security.getOrderBook().enqueue(order));
+        var matchResults = matcher.auctionMatch(security.getOrderBook() , 15550);
+        assertThat(broker.getCredit()).isEqualTo(100_000_000L + 340 * (15700 - 15550) + 43 * (15600 - 15550));
+        assertThat(broker1.getCredit()).isEqualTo(100_000_000L + 383 * (15550));
+        assertThat(security.getOrderBook().getBuyQueue().size()).isEqualTo(0);
+        assertThat(security.getOrderBook().getSellQueue().size()).isEqualTo(0);
+
+    }
 
     @Test
     void check_if_stop_order_limits_get_activated_after_auction_to_auction(){
