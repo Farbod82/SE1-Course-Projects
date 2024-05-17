@@ -600,6 +600,33 @@ public class AuctionMatchingTest {
         verify(eventPublisher,times(1)).publish(new OpeningPriceEvent("ABC",15900,550));
         verify(eventPublisher,times(1)).publish(new OrderDeletedEvent(3, 21));
         verify(eventPublisher,times(1)).publish(new OpeningPriceEvent("ABC",15900,400));
-
     }
+
+    @Test
+    void test_updating_unactivated_stop_limit_order_not_allowed(){
+        orders = Arrays.asList(
+                new Order(5, security, Side.SELL, 200, 16000, broker1, shareholder),
+                new Order(6, security, Side.SELL, 100, 15800, broker1, shareholder),
+                new Order(7, security, Side.SELL, 200, 15810, broker1, shareholder),
+                new Order(8, security, BUY, 200, 15900, broker, shareholder),
+                new Order(9, security, BUY, 200, 15910, broker, shareholder),
+                new Order(10, security, BUY, 200, 15000, broker, shareholder));
+
+        orders.forEach(order -> orderBook.enqueue(order));
+
+        Order order1 = new Order(20,security, SELL,10,15805,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, order1.getEntryTime(), SELL, 10, 15805, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
+
+        Order order2 = new Order(21,security, SELL,50,15805,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 21, order2.getEntryTime(), SELL, 50, 15805, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15900));
+
+        changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
+        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(3,"ABC",21,LocalDateTime.now(), BUY,60,15800,1,shareholder.getShareholderId(),0,15910));
+
+        changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
+
+        verify(eventPublisher, times(1)).publish(new OrderRejectedEvent(3,21,List.of(Message.UPDATE_UNACTIVATED_STOP_LIMIT_ORDER_NOT_ALLOWED_IN_AUCTION_MODE)));
+        verify(eventPublisher,times(1)).publish(new OpeningPriceEvent("ABC",15900,50));
+    }
+
 }
