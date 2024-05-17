@@ -40,7 +40,7 @@ public class Security {
     private int latestPrice;
     EnterOrderRq lastProcessedReqID;
 
-    public void setLatestCost(Trade trade){
+    public void setLatestPrice(Trade trade){
         latestPrice = trade.getPrice();
     }
 
@@ -132,7 +132,9 @@ public class Security {
         Order order = orderBook.findByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
         Order unactivatedStopOrder = findUnactivatedStopOrderById(deleteOrderRq.getOrderId());
 
-        if(unactivatedStopOrder != null && matchingState == MatchingState.CONTINUOUS){
+        if(unactivatedStopOrder != null){
+            if(matchingState == MatchingState.AUCTION)
+                throw new InvalidRequestException(Message.DELETE_UNACTIVATED_STOP_LIMIT_ORDER_NOT_ALLOWED_IN_AUCTION_MODE);
             stopOrderList.remove(unactivatedStopOrder);
             if(unactivatedStopOrder.getSide() == BUY){
                 unactivatedStopOrder.getBroker().increaseCreditBy(unactivatedStopOrder.getValue());
@@ -156,7 +158,7 @@ public class Security {
         return null;
     }
 
-    public MatchResult updateUnactivatedStopLimitOrder(EnterOrderRq updateOrderRq, Matcher matcher) throws InvalidRequestException{
+    public MatchResult updateUnactivatedStopLimitOrder(EnterOrderRq updateOrderRq, Matcher matcher) {
         Order stopOrder = findUnactivatedStopOrderById(updateOrderRq.getOrderId());
         if (checkSellerShareholderDoesntHaveEnoughPositions(updateOrderRq, stopOrder)){
             return MatchResult.notEnoughPositions();
@@ -236,7 +238,9 @@ public class Security {
 
     public MatchResult updateOrder(EnterOrderRq updateOrderRq, Matcher matcher) throws InvalidRequestException {
 
-        if(findUnactivatedStopOrderById(updateOrderRq.getOrderId()) != null && matchingState == MatchingState.CONTINUOUS) {
+        if(findUnactivatedStopOrderById(updateOrderRq.getOrderId()) != null) {
+            if (matchingState == MatchingState.AUCTION)
+                throw new InvalidRequestException(Message.UPDATE_UNACTIVATED_STOP_LIMIT_ORDER_NOT_ALLOWED_IN_AUCTION_MODE);
             return updateUnactivatedStopLimitOrder(updateOrderRq, matcher);
         }
         else {

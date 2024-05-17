@@ -4,7 +4,6 @@ import ir.ramtung.tinyme.domain.entity.*;
 import ir.ramtung.tinyme.messaging.Message;
 import ir.ramtung.tinyme.messaging.exception.InvalidRequestException;
 import ir.ramtung.tinyme.messaging.EventPublisher;
-import ir.ramtung.tinyme.messaging.TradeDTO;
 import ir.ramtung.tinyme.messaging.event.*;
 import ir.ramtung.tinyme.messaging.request.DeleteOrderRq;
 import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
@@ -12,13 +11,11 @@ import ir.ramtung.tinyme.messaging.request.OrderEntryType;
 import ir.ramtung.tinyme.repository.BrokerRepository;
 import ir.ramtung.tinyme.repository.SecurityRepository;
 import ir.ramtung.tinyme.repository.ShareholderRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class OrderHandler {
@@ -39,10 +36,6 @@ public class OrderHandler {
         this.matchOutcomePublisher = matchOutcomePublisher;
     }
 
-
-
-
-
     public void handleEnterOrder(EnterOrderRq enterOrderRq) {
         try {
             validateEnterOrderRq(enterOrderRq);
@@ -51,14 +44,14 @@ public class OrderHandler {
             Broker broker = brokerRepository.findBrokerById(enterOrderRq.getBrokerId());
             Shareholder shareholder = shareholderRepository.findShareholderById(enterOrderRq.getShareholderId());
 
-            if (security.isInAuctionMatchingState()){
-                validateEnterOrderRqInAuctionState(enterOrderRq);
-            }
-
             MatchResult matchResult;
 
-            if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER)
+            if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER) {
+                if (security.isInAuctionMatchingState()){
+                    validateEnterOrderRqForNewOrderInAuctionState(enterOrderRq);
+                }
                 matchResult = security.newOrder(enterOrderRq, broker, shareholder, matcher);
+            }
             else
                 matchResult = security.updateOrder(enterOrderRq, matcher);
 
@@ -108,13 +101,13 @@ public class OrderHandler {
     }
 
 
-    private void validateEnterOrderRqInAuctionState(EnterOrderRq enterOrderRq) throws InvalidRequestException{
+    private void validateEnterOrderRqForNewOrderInAuctionState(EnterOrderRq enterOrderRq) throws InvalidRequestException{
         List<String> errors = new LinkedList<>();
         if(enterOrderRq.getMinimumExecutionQuantity() > 0) {
-            errors.add(Message.ORDER_WITH_MINIMUM_EXECUTION_QUANTITY_NOT_ALLOWED_IN_AUCTION_MODE);
+            errors.add(Message.NEW_ORDER_WITH_MINIMUM_EXECUTION_QUANTITY_NOT_ALLOWED_IN_AUCTION_MODE);
         }
         if(enterOrderRq.getStopPrice() > 0){
-            errors.add(Message.STOP_LIMIT_ORDER_NOT_ALLOWED_IN_AUCTION_MODE);
+            errors.add(Message.NEW_STOP_LIMIT_ORDER_NOT_ALLOWED_IN_AUCTION_MODE);
         }
         if (!errors.isEmpty())
             throw new InvalidRequestException(errors);
