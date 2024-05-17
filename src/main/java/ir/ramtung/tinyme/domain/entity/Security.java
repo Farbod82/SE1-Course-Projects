@@ -78,8 +78,6 @@ public class Security {
         }
     }
 
-
-
     private boolean isStopLimitOrder(EnterOrderRq enterOrderRq) {
         return enterOrderRq.getStopPrice() > 0;
     }
