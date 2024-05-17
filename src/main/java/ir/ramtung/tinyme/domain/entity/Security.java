@@ -40,7 +40,7 @@ public class Security {
     private int latestPrice;
     EnterOrderRq lastProcessedReqID;
 
-    public void setLatestCost(Trade trade){
+    public void setLatestPrice(Trade trade){
         latestPrice = trade.getPrice();
     }
 
