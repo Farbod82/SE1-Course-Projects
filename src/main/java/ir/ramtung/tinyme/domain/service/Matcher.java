@@ -125,7 +125,13 @@ public class Matcher {
             if(buyOrder.getPrice() > openingPrice){
                 trade.returnMoneyToBuyer();
             }
-            if (buyOrder.getQuantity() >= sellOrder.getQuantity()) {
+            if(buyOrder.getQuantity() == sellOrder.getQuantity()){
+                orderBook.removeFirst(sellOrder.getSide());
+                orderBook.removeFirst(buyOrder.getSide());
+                handleAddingIcebergOrderToOrderBook(orderBook , sellOrder);
+                handleAddingIcebergOrderToOrderBook(orderBook , buyOrder);
+            }
+            else if (buyOrder.getQuantity() > sellOrder.getQuantity()) {
                 buyOrder.decreaseQuantity(sellOrder.getQuantity());
                 orderBook.removeFirst(sellOrder.getSide());
                 handleAddingIcebergOrderToOrderBook(orderBook , sellOrder);
