@@ -390,6 +390,30 @@ public class AuctionMatchingTest {
     }
 
     @Test
+    void check_auction_match_with_equal_quantity_iceberg_order(){
+        orders = Arrays.asList(
+                new IcebergOrder(4, security, Side.BUY, 60, 15800, broker, shareholder , 50),
+                new IcebergOrder(1, security, Side.BUY, 80, 15700, broker, shareholder , 50),
+                new Order(2, security, Side.BUY, 20, 15600, broker, shareholder),
+                new Order(3, security, Side.BUY, 70, 15580, broker, shareholder),
+                new IcebergOrder(9, security, Side.SELL, 70, 15500, broker1, shareholder , 20),
+                new IcebergOrder(10, security, Side.SELL, 100, 15400, broker1, shareholder , 50),
+                new Order(11, security, Side.SELL, 50, 15300, broker1, shareholder , 50)
+        );
+        orders.forEach(order -> security.getOrderBook().enqueue(order));
+        var matchResults = matcher.auctionMatch(security.getOrderBook() , 15550);
+        assertThat(broker.getCredit()).isEqualTo(100_000_000L + 60 * (15800 - 15550)
+                + 70 * (15700 - 15550)+ (20) *(15600 - 15550) + (50 + 20)*(15580 - 15550));
+        assertThat(broker1.getCredit()).isEqualTo(100_000_000L + 220 * (15550));
+        assertThat(security.getOrderBook().getBuyQueue().size()).isEqualTo(1);
+        Order remainderOrder = security.getOrderBook().getBuyQueue().getFirst();
+        assertThat(remainderOrder.getOrderId()).isEqualTo(1);
+        assertThat(remainderOrder.getQuantity()).isEqualTo(10);
+        assertThat(security.getOrderBook().getSellQueue().size()).isEqualTo(0);
+
+    }
+
+    @Test
     void check_if_stop_order_limits_get_activated_after_auction_to_auction(){
         orders = Arrays.asList(
                 new Order(3, security, Side.BUY, 300, 15500, broker, shareholder),
@@ -429,6 +453,10 @@ public class AuctionMatchingTest {
         assertThat(security.getStopOrderList()).isEmpty();
 
     }
+
+
+
+
     @Test
     void check_if_stop_order_limits_get_activated_after_auction_to_continuous(){
         orders = Arrays.asList(
