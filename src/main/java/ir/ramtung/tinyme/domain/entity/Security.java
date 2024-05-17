@@ -132,7 +132,9 @@ public class Security {
         Order order = orderBook.findByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
         Order unactivatedStopOrder = findUnactivatedStopOrderById(deleteOrderRq.getOrderId());
 
-        if(unactivatedStopOrder != null && matchingState == MatchingState.CONTINUOUS){
+        if(unactivatedStopOrder != null){
+            if(matchingState == MatchingState.AUCTION)
+                throw new InvalidRequestException(Message.DELETE_UNACTIVATED_STOP_LIMIT_ORDER_NOT_ALLOWED_IN_AUCTION_MODE);
             stopOrderList.remove(unactivatedStopOrder);
             if(unactivatedStopOrder.getSide() == BUY){
                 unactivatedStopOrder.getBroker().increaseCreditBy(unactivatedStopOrder.getValue());

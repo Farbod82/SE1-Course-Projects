@@ -26,6 +26,8 @@ public class Message {
     public static final String NEW_ORDER_WITH_MINIMUM_EXECUTION_QUANTITY_NOT_ALLOWED_IN_AUCTION_MODE = "New order with positive minimum execution quantity is not possible in Auction Mode";
     public static final String NEW_STOP_LIMIT_ORDER_NOT_ALLOWED_IN_AUCTION_MODE = "New stop Limit Order is not possible in Auction Mode";
 
-    public static final String UPDATE_UNACTIVATED_STOP_LIMIT_ORDER_NOT_ALLOWED_IN_AUCTION_MODE = "New unactivated stop limit Order is not possible in Auction Mode";
+    public static final String UPDATE_UNACTIVATED_STOP_LIMIT_ORDER_NOT_ALLOWED_IN_AUCTION_MODE = "Update unactivated stop limit Order is not possible in Auction Mode";
+
+    public static final String DELETE_UNACTIVATED_STOP_LIMIT_ORDER_NOT_ALLOWED_IN_AUCTION_MODE = "Delete unactivated stop limit Order is not possible in Auction Mode";
 
 }
