@@ -275,7 +275,7 @@ public class AuctionMatchingTest {
         changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 11, LocalDateTime.now(), Side.BUY,
                 500, 15805, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 200));
-        verify(eventPublisher,times(1)).publish(new OrderRejectedEvent(1,11,List.of(Message.ORDER_WITH_MINIMUM_EXECUTION_QUANTITY_NOT_ALLOWED_IN_AUCTION_MODE)));
+        verify(eventPublisher,times(1)).publish(new OrderRejectedEvent(1,11,List.of(Message.NEW_ORDER_WITH_MINIMUM_EXECUTION_QUANTITY_NOT_ALLOWED_IN_AUCTION_MODE)));
         assertThat(security.getOrderBook().getBuyQueue()).isEmpty();
     }
 
@@ -284,7 +284,7 @@ public class AuctionMatchingTest {
         changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 11, LocalDateTime.now(), Side.BUY,
                 500, 15805, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 200));
-        verify(eventPublisher,times(1)).publish(new OrderRejectedEvent(1,11,List.of(Message.STOP_LIMIT_ORDER_NOT_ALLOWED_IN_AUCTION_MODE)));
+        verify(eventPublisher,times(1)).publish(new OrderRejectedEvent(1,11,List.of(Message.NEW_STOP_LIMIT_ORDER_NOT_ALLOWED_IN_AUCTION_MODE)));
         assertThat(security.getOrderBook().getBuyQueue()).isEmpty();
     }
 

@@ -156,7 +156,7 @@ public class Security {
         return null;
     }
 
-    public MatchResult updateUnactivatedStopLimitOrder(EnterOrderRq updateOrderRq, Matcher matcher) throws InvalidRequestException{
+    public MatchResult updateUnactivatedStopLimitOrder(EnterOrderRq updateOrderRq, Matcher matcher) {
         Order stopOrder = findUnactivatedStopOrderById(updateOrderRq.getOrderId());
         if (checkSellerShareholderDoesntHaveEnoughPositions(updateOrderRq, stopOrder)){
             return MatchResult.notEnoughPositions();
@@ -236,7 +236,9 @@ public class Security {
 
     public MatchResult updateOrder(EnterOrderRq updateOrderRq, Matcher matcher) throws InvalidRequestException {
 
-        if(findUnactivatedStopOrderById(updateOrderRq.getOrderId()) != null && matchingState == MatchingState.CONTINUOUS) {
+        if(findUnactivatedStopOrderById(updateOrderRq.getOrderId()) != null) {
+            if (matchingState == MatchingState.AUCTION)
+                throw new InvalidRequestException(Message.UPDATE_UNACTIVATED_STOP_LIMIT_ORDER_NOT_ALLOWED_IN_AUCTION_MODE);
             return updateUnactivatedStopLimitOrder(updateOrderRq, matcher);
         }
         else {
