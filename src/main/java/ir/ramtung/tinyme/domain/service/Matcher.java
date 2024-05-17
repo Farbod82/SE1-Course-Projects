@@ -94,7 +94,7 @@ public class Matcher {
         }
         changeShareholdersPosition(result);
         if (!result.trades().isEmpty())
-            order.getSecurity().setLatestCost(result.trades().getLast());
+            order.getSecurity().setLatestPrice(result.trades().getLast());
         return result;
     }
 
@@ -121,7 +121,7 @@ public class Matcher {
 
             trade.increaseSellersCredit();
             trades.add(trade);
-            buyOrder.getSecurity().setLatestCost(trade);
+            buyOrder.getSecurity().setLatestPrice(trade);
             if(buyOrder.getPrice() > openingPrice){
                 trade.returnMoneyToBuyer();
             }
