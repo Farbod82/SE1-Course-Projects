@@ -48,15 +48,22 @@ public class Security {
         return orderBook.totalSellQuantityByShareholder(order.getShareholder()) - order.getQuantity() + enterOrderRq.getQuantity();
     }
 
+    private int calculateNewQuantityOfShareholder(EnterOrderRq enterOrderRq,Shareholder shareholder){
+        return orderBook.totalSellQuantityByShareholder(shareholder)  + enterOrderRq.getQuantity();
+    }
+
     private boolean checkSellerShareholderDoesntHaveEnoughPositions(EnterOrderRq enterOrderRq,Order order) {
         return enterOrderRq.getSide() == Side.SELL &&
                 !order.getShareholder().hasEnoughPositionsOn(this, calculateNewQuantityOfShareholder(enterOrderRq, order));
     }
 
+    private boolean checkSellerShareholderDoesntHaveEnoughPositions(EnterOrderRq enterOrderRq,Shareholder shareholder) {
+        return enterOrderRq.getSide() == Side.SELL &&
+                !shareholder.hasEnoughPositionsOn(this, calculateNewQuantityOfShareholder(enterOrderRq, shareholder));
+    }
+
     public MatchResult newOrder(EnterOrderRq enterOrderRq, Broker broker, Shareholder shareholder, Matcher matcher) {
-        if (enterOrderRq.getSide() == Side.SELL &&
-                !shareholder.hasEnoughPositionsOn(this,
-                        orderBook.totalSellQuantityByShareholder(shareholder) + enterOrderRq.getQuantity()))
+        if (checkSellerShareholderDoesntHaveEnoughPositions(enterOrderRq, shareholder))
             return MatchResult.notEnoughPositions();
 
         Order order;
