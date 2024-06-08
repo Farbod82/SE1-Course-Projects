@@ -86,7 +86,7 @@ public class AuctionMatchingTest {
 
     }
 
-    void set_check_opening_price_status(){
+    void setupTest(){
         orders = Arrays.asList(
                 new Order(5, security, Side.SELL, 200, 16000, broker1, shareholder),
                 new Order(6, security, Side.SELL, 200, 15800, broker1, shareholder),
@@ -96,21 +96,11 @@ public class AuctionMatchingTest {
                 new Order(10, security, BUY, 200, 15000, broker, shareholder));
 
         orders.forEach(order -> orderBook.enqueue(order));
-        changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
     }
 
     @Test
-    void check_correct_indicative_opening_price() {
-        orders = Arrays.asList(
-                new Order(5, security, Side.SELL, 200, 16000, broker1, shareholder),
-                new Order(6, security, Side.SELL, 200, 15800, broker1, shareholder),
-                new Order(7, security, Side.SELL, 200, 15810, broker1, shareholder),
-                new Order(8, security, BUY, 200, 15900, broker, shareholder),
-                new Order(9, security, BUY, 200, 15910, broker, shareholder),
-                new Order(10, security, BUY, 200, 15000, broker, shareholder));
-
-        orders.forEach(order -> orderBook.enqueue(order));
-
+    void check_correct_indicative_opening_prices() {
+        setupTest();
         HashMap<String, Long> priceAndQuantity =  orderBook.calcCurrentOpeningPriceAndMaxQuantity(15850);
         assertThat(priceAndQuantity.get("price").intValue()).isEqualTo(15850);
         HashMap<String, Long> priceAndQuantity1 =  orderBook.calcCurrentOpeningPriceAndMaxQuantity(16000);
@@ -121,15 +111,7 @@ public class AuctionMatchingTest {
 
     @Test
     void check_opening_price_published_correctly() {
-        orders = Arrays.asList(
-                new Order(5, security, Side.SELL, 200, 16000, broker1, shareholder),
-                new Order(6, security, Side.SELL, 200, 15800, broker1, shareholder),
-                new Order(7, security, Side.SELL, 200, 15810, broker1, shareholder),
-                new Order(8, security, BUY, 200, 15900, broker, shareholder),
-                new Order(9, security, BUY, 200, 15910, broker, shareholder),
-                new Order(10, security, BUY, 200, 15000, broker, shareholder));
-
-        orders.forEach(order -> orderBook.enqueue(order));
+        setupTest();
         changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
 
         Order order1 = new Order(20,security, SELL,285,15815,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
@@ -141,17 +123,8 @@ public class AuctionMatchingTest {
         verify(eventPublisher,times(1)).publish(new OpeningPriceEvent("ABC", 15810, 400));
     }
 
-    @Test void check_opening_price_published_correctly_after_change_last_price_by_opening() {
-        orders = Arrays.asList(
-                new Order(5, security, Side.SELL, 200, 16000, broker1, shareholder),
-                new Order(6, security, Side.SELL, 200, 15800, broker1, shareholder),
-                new Order(7, security, Side.SELL, 200, 15810, broker1, shareholder),
-                new Order(8, security, BUY, 200, 15900, broker, shareholder),
-                new Order(9, security, BUY, 200, 15910, broker, shareholder),
-                new Order(10, security, BUY, 200, 15000, broker, shareholder));
-
-        orders.forEach(order -> orderBook.enqueue(order));
-
+    @Test void check_opening_price_published_correctly_after_changed_last_price_by_opening() {
+        setupTest();
         Order order1 = new Order(20,security, SELL,50,15805,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, order1.getEntryTime(), SELL, 50, 15805, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
         changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
@@ -172,7 +145,8 @@ public class AuctionMatchingTest {
 
     @Test
     void check_opening_price_published_correctly_after_change_last_price_by_new_order_in_continues_state() {
-        set_check_opening_price_status();
+        setupTest();
+        changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
         Order order1 = new Order(20,security, SELL,285,15815,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
 
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, order1.getEntryTime(), SELL
@@ -200,7 +174,8 @@ public class AuctionMatchingTest {
 
     @Test
     void check_update_order_correctly_done_in_auction_matching(){
-        set_check_opening_price_status();
+        setupTest();
+        changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
         Order order1 = new Order(20,security, SELL,5,15799,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
 
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, order1.getEntryTime(), SELL,
@@ -224,7 +199,8 @@ public class AuctionMatchingTest {
 
     @Test
     void check_delete_order_correctly_done_in_auction_matching(){
-        set_check_opening_price_status();
+        setupTest();
+        changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
         Order order1 = new Order(20,security, SELL,5,15799,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW,0,false,0);
 
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 20, order1.getEntryTime(), SELL,
@@ -289,7 +265,7 @@ public class AuctionMatchingTest {
     }
 
     @Test
-    void check_auction_match_with_given_opening_price_with_one_buy_icebergOrder(){
+    void check_auction_match_with_given_opening_price_with_one_buy_icebergOrder_works_correctly(){
         orders = Arrays.asList(
                 new Order(1, security, Side.BUY, 304, 15700, broker, shareholder),
                 new IcebergOrder(3 , security , Side.BUY , 200 , 15650 , broker ,shareholder , 50),
@@ -308,7 +284,7 @@ public class AuctionMatchingTest {
     }
 
     @Test
-    void twice_changing_matching_state_and_publishing_opening_price_event_after_that(){
+    void changing_matching_state_and_publishing_opening_price_event_after_that_twice(){
         orders = Arrays.asList(
                 new Order(1, security, SELL, 200, 16000, broker1, shareholder),
                 new Order(2, security, BUY, 300, 16000, broker, shareholder));
@@ -336,7 +312,7 @@ public class AuctionMatchingTest {
     }
 
     @Test
-    void test_actionMatch_with_min_buy_price_less_min_sell_price(){
+    void test_auction_match_with_min_buy_price_less_than_min_sell_price(){
         orders = Arrays.asList(
                 new Order(1, security, Side.BUY, 304, 15700, broker, shareholder),
                 new Order(2, security, Side.BUY, 43, 15600, broker, shareholder),
@@ -359,7 +335,7 @@ public class AuctionMatchingTest {
 
 
     @Test
-    void test_actionMatch_with_equal_min_and_max_of_buy_price_and_sell_price(){
+    void test_auction_match_with_equal_min_and_max_of_buy_price_and_sell_price(){
         orders = Arrays.asList(
                 new Order(2, security, Side.BUY, 43, 15600, broker, shareholder),
                 new Order(10, security, Side.SELL, 4, 15500, broker1, shareholder),
@@ -444,11 +420,9 @@ public class AuctionMatchingTest {
 
         changeMatchStateHandler.handleChangeMatchingState(new ChangeMatchingStateRq("ABC", MatchingState.AUCTION));
 
-        Order order3 = new Order(22,security, SELL,5,15900,broker1,shareholder,LocalDateTime.now(),OrderStatus.NEW);
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 22, order2.getEntryTime(), SELL,
                 5, 15900, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
 
-//        verify(eventPublisher,times(1)).publish(new SecurityStateChangedEvent(LocalDateTime.now(),"ABC",MatchingState.AUCTION));
         verify(eventPublisher,times(1)).publish(new OrderAcceptedEvent(3,22));
         verify(eventPublisher,times(1)).publish(new OpeningPriceEvent("ABC",15500,340));
 
@@ -493,7 +467,6 @@ public class AuctionMatchingTest {
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, "ABC", 22, order2.getEntryTime(), SELL,
                 5, 15900, broker1.getBrokerId(), shareholder.getShareholderId(), 0, 0, 0));
 
-//        verify(eventPublisher,times(1)).publish(new SecurityStateChangedEvent(LocalDateTime.now(),"ABC",MatchingState.AUCTION));
         verify(eventPublisher,times(1)).publish(new OrderAcceptedEvent(3,22));
         verify(eventPublisher,times(1)).publish(new OpeningPriceEvent("ABC",15500,340));
 
@@ -502,7 +475,6 @@ public class AuctionMatchingTest {
         verify(eventPublisher,times(1)).publish(new TradeEvent("ABC",15500,43,2,10));
         verify(eventPublisher,times(1)).publish(new TradeEvent("ABC",15500,296,3,10));
         verify(eventPublisher,times(1)).publish(new OrderActivatedEvent(2,21));
-//        verify(eventPublisher,times(1)).publish(new OpeningPriceEvent("ABC",15500,4));
 
         Trade trade1 = new Trade(security,15500,4,order2, order4);
         verify(eventPublisher,times(1)).publish(new OrderExecutedEvent(2,21,List.of(new TradeDTO(trade1))));
@@ -510,7 +482,7 @@ public class AuctionMatchingTest {
     }
 
     @Test
-    void test_change_position_after_auctionMatch(){
+    void test_change_position_after_auction_match(){
         Shareholder shareholder2 = Shareholder.builder().shareholderId(2).build();
         shareholder2.incPosition(security, 100_000_000_0);
         shareholderRepository.addShareholder(shareholder2);
@@ -570,7 +542,7 @@ public class AuctionMatchingTest {
     }
 
     @Test
-    void test_deleting_activated_stop_limit_order(){
+    void test_deleting_activated_stop_limit_order_works_correctly(){
         orders = Arrays.asList(
                 new Order(5, security, Side.SELL, 200, 16000, broker1, shareholder),
                 new Order(6, security, Side.SELL, 200, 15800, broker1, shareholder),
@@ -629,7 +601,7 @@ public class AuctionMatchingTest {
     }
 
     @Test
-    void test_updating_activated_stop_limit_order(){
+    void test_updating_activated_stop_limit_order_works_correctly(){
         orders = Arrays.asList(
                 new Order(5, security, Side.SELL, 200, 16000, broker1, shareholder),
                 new Order(6, security, Side.SELL, 100, 15800, broker1, shareholder),

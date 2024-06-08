@@ -469,9 +469,6 @@ public class StopOrderTest {
     @Test
     void check_if_passing_stop_order_limit_in_sell_order_while_updating_works_correct() {
         setupTest();
-//        Broker broker2 = Broker.builder().brokerId(3).credit(100_000_000L).build();
-//        brokerRepository.addBroker(broker2);
-
         Order order1 = new Order(20, security, BUY, 200, 700, broker1, shareholder, LocalDateTime.now(), OrderStatus.NEW, 0, false, 0);
         Order order2 = new Order(21, security, SELL, 100, 550, broker1, shareholder, LocalDateTime.now(), OrderStatus.NEW, 0, false, 0);
         Order order3 = new Order(22, security, BUY, 100, 600, broker1, shareholder, LocalDateTime.now(), OrderStatus.NEW, 0, false, 0);
