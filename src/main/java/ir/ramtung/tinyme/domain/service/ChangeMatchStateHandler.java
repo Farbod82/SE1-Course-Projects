@@ -37,12 +37,14 @@ public class ChangeMatchStateHandler {
 
     private void handleActivatedStopOrders(Security security) {
         MatchResult matchResult;
-        matchOutcomePublisher.publishActivatedStopOrders(security);
+//        matchOutcomePublisher.publishActivatedStopOrders(security);
+        security.activateStopOrders();
         while(security.hasAnyActiveStopOrder()){
             matchResult = security.matchSingleStopOrder(matcher);
             EnterOrderRq stopOrderEnterOrderRq = security.getLastProcessedReqID();
-            matchOutcomePublisher.publishMatchOutComes(matchResult,stopOrderEnterOrderRq);
-            matchOutcomePublisher.publishActivatedStopOrders(security);
+            matchOutcomePublisher.publishAfterActivationResults(matchResult,stopOrderEnterOrderRq);
+//            matchOutcomePublisher.publishMatchOutComes(matchResult,stopOrderEnterOrderRq);
+//            matchOutcomePublisher.publishActivatedStopOrders(security);
         }
     }
 
@@ -68,7 +70,11 @@ public class ChangeMatchStateHandler {
                 handleActivatedStopOrders(security);
             }
             else if(changeMatchingStateRq.getTargetState() == MatchingState.AUCTION){
-                matchOutcomePublisher.publishActivatedStopOrders(security);
+//                matchOutcomePublisher.publishActivatedStopOrders(security);
+                LinkedList<OrderActivatedEvent> activatedOrdersEvents =  security.activateStopOrders();
+                for (var activated : activatedOrdersEvents){
+                    eventPublisher.publish(activated);
+                }
                 boolean anyActivatedOrderExisted = security.hasAnyActiveStopOrder();
                 security.enqueueActivatedStopOrdersAfterAuction();
                 openingPriceAndQuantity = orderBook.calcCurrentOpeningPriceAndMaxQuantity(security.getLatestPrice());

@@ -23,11 +23,11 @@ public class Message {
     public static final String CANNOT_SPECIFY_STOP_LIMIT_PRICE_FOR_A_NON_STOP_LIMIT_ORDER = "Cannot specify stop limit price for a non-stop-limit order";
     public static final String CANNOT_SPECIFY_STOP_LIMIT_PRICE_FOR_A_ACTIVATED_STOP_LIMIT_ORDER = "Cannot specify stop limit price for a activated stop-limit order";
 
-    public static final String NEW_ORDER_WITH_MINIMUM_EXECUTION_QUANTITY_NOT_ALLOWED_IN_AUCTION_MODE = "New order with positive minimum execution quantity is not possible in Auction Mode";
-    public static final String NEW_STOP_LIMIT_ORDER_NOT_ALLOWED_IN_AUCTION_MODE = "New stop Limit Order is not possible in Auction Mode";
+    public static final String NEW_ORDER_WITH_MINIMUM_EXECUTION_QUANTITY_NOT_ALLOWED_IN_AUCTION_MODE = "New order with positive minimum execution quantity is not possible in auction mode";
+    public static final String NEW_STOP_LIMIT_ORDER_NOT_ALLOWED_IN_AUCTION_MODE = "New stop limit order is not possible in auction mode";
 
-    public static final String UPDATE_UNACTIVATED_STOP_LIMIT_ORDER_NOT_ALLOWED_IN_AUCTION_MODE = "Update unactivated stop limit Order is not possible in Auction Mode";
+    public static final String UPDATE_UNACTIVATED_STOP_LIMIT_ORDER_NOT_ALLOWED_IN_AUCTION_MODE = "Update unactivated stop limit order is not possible in auction mode";
 
-    public static final String DELETE_UNACTIVATED_STOP_LIMIT_ORDER_NOT_ALLOWED_IN_AUCTION_MODE = "Delete unactivated stop limit Order is not possible in Auction Mode";
+    public static final String DELETE_UNACTIVATED_STOP_LIMIT_ORDER_NOT_ALLOWED_IN_AUCTION_MODE = "Delete unactivated stop limit order is not possible in auction mode";
 
 }
