@@ -108,7 +108,6 @@ public class Matcher {
         }
     }
     public MatchResult auctionMatch(OrderBook orderBook ,int openingPrice){
-
         LinkedList<Trade> trades = new LinkedList<>();
         MatchResult matchResults;
         while (orderBook.hasOrderOfType(Side.BUY) &&  orderBook.hasOrderOfType(Side.SELL)) {
@@ -119,34 +118,36 @@ public class Matcher {
             if((sellOrder.getPrice() > openingPrice) || (buyOrder.getPrice() < openingPrice))
                 break;
             Trade trade = new Trade(buyOrder.getSecurity(), openingPrice, Math.min(buyOrder.getQuantity(), sellOrder.getQuantity()), buyOrder, sellOrder);
-
             trade.increaseSellersCredit();
             trades.add(trade);
             buyOrder.getSecurity().setLatestPrice(trade);
             if(buyOrder.getPrice() > openingPrice){
                 trade.returnMoneyToBuyer();
             }
-            if(buyOrder.getQuantity() == sellOrder.getQuantity()){
-                orderBook.removeFirst(sellOrder.getSide());
-                orderBook.removeFirst(buyOrder.getSide());
-                handleAddingIcebergOrderToOrderBook(orderBook , sellOrder);
-                handleAddingIcebergOrderToOrderBook(orderBook , buyOrder);
-            }
-            else if (buyOrder.getQuantity() > sellOrder.getQuantity()) {
-                buyOrder.decreaseQuantity(sellOrder.getQuantity());
-                orderBook.removeFirst(sellOrder.getSide());
-                handleAddingIcebergOrderToOrderBook(orderBook , sellOrder);
-            } else {
-                sellOrder.decreaseQuantity(buyOrder.getQuantity());
-                orderBook.removeFirst(buyOrder.getSide());
-                handleAddingIcebergOrderToOrderBook(orderBook , buyOrder);
-            }
+            applyChangesOfActionMatching(buyOrder ,sellOrder ,orderBook);
         }
         MatchResult result = MatchResult.executed(null, trades);
         changeShareholdersPosition(result);
         return  result;
     }
 
+    void applyChangesOfActionMatching(Order buyOrder ,Order sellOrder ,OrderBook orderBook){
+        if(buyOrder.getQuantity() == sellOrder.getQuantity()){
+            orderBook.removeFirst(sellOrder.getSide());
+            orderBook.removeFirst(buyOrder.getSide());
+            handleAddingIcebergOrderToOrderBook(orderBook , sellOrder);
+            handleAddingIcebergOrderToOrderBook(orderBook , buyOrder);
+        }
+        else if (buyOrder.getQuantity() > sellOrder.getQuantity()) {
+            buyOrder.decreaseQuantity(sellOrder.getQuantity());
+            orderBook.removeFirst(sellOrder.getSide());
+            handleAddingIcebergOrderToOrderBook(orderBook , sellOrder);
+        } else {
+            sellOrder.decreaseQuantity(buyOrder.getQuantity());
+            orderBook.removeFirst(buyOrder.getSide());
+            handleAddingIcebergOrderToOrderBook(orderBook , buyOrder);
+        }
+    }
     private void handleAddingIcebergOrderToOrderBook(OrderBook orderBook , Order order){
         if (order instanceof IcebergOrder icebergOrder) {
             icebergOrder.decreaseQuantity(order.getQuantity());
