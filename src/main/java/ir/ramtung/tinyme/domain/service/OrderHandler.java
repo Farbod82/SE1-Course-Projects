@@ -13,6 +13,7 @@ import ir.ramtung.tinyme.repository.ShareholderRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 
 @Service
 public class OrderHandler {
@@ -24,9 +25,9 @@ public class OrderHandler {
 
     MatchOutcomePublisher matchOutcomePublisher;
 
-    OrderValdiator orderValdiator;
+    OrderValidator orderValdiator;
 
-    public OrderHandler(SecurityRepository securityRepository, BrokerRepository brokerRepository, ShareholderRepository shareholderRepository, EventPublisher eventPublisher, Matcher matcher, MatchOutcomePublisher matchOutcomePublisher, OrderValdiator orderValdiator) {
+    public OrderHandler(SecurityRepository securityRepository, BrokerRepository brokerRepository, ShareholderRepository shareholderRepository, EventPublisher eventPublisher, Matcher matcher, MatchOutcomePublisher matchOutcomePublisher, OrderValidator orderValdiator) {
         this.securityRepository = securityRepository;
         this.brokerRepository = brokerRepository;
         this.shareholderRepository = shareholderRepository;
@@ -51,10 +52,9 @@ public class OrderHandler {
             else {
                 matchResult = security.updateOrder(enterOrderRq, matcher);
             }
-            if (! security.isInAuctionMatchingState()) {
-                publishingInstantlyActivatedStopLimitOrders(enterOrderRq,matchResult);
-                checkAllActivatedStopLimitOrders(security);
-            }
+
+//            publishingInstantlyActivatedStopLimitOrders(enterOrderRq,matchResult);
+            checkAllActivatedStopLimitOrders(security);
             matchOutcomePublisher.publishMatchOutComes(matchResult, enterOrderRq);
 
         } catch (InvalidRequestException ex) {
@@ -63,16 +63,19 @@ public class OrderHandler {
     }
     private void checkAllActivatedStopLimitOrders(Security security) {
         MatchResult matchResult;
-        matchOutcomePublisher.publishActivatedStopOrders(security);
+        security.activateStopOrders();
+//        matchOutcomePublisher.publishActivatedStopOrders(security);
         while(security.hasAnyActiveStopOrder()) {
             matchResult = security.matchSingleStopOrder(matcher);
             EnterOrderRq stopOrderEnterOrderRq = security.getLastProcessedReqID();
-            matchOutcomePublisher.publishMatchOutComes(matchResult, stopOrderEnterOrderRq);
-            matchOutcomePublisher.publishActivatedStopOrders(security);
+//            matchOutcomePublisher.publishMatchOutComes(matchResult, stopOrderEnterOrderRq);
+            matchOutcomePublisher.publishAfterActivationResults(matchResult,stopOrderEnterOrderRq);
+//            matchOutcomePublisher.publishActivatedStopOrders(security);
+            security.activateStopOrders();
         }
     }
     private void publishingInstantlyActivatedStopLimitOrders(EnterOrderRq enterOrderRq, MatchResult matchResult) {
-        if(enterOrderRq.getStopPrice() > 0 && matchResult.outcome() != MatchingOutcome.STOP_LIMIT_ORDER_ACCEPTED && matchResult.outcome() != MatchingOutcome.NOT_ENOUGH_CREDIT && enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER){
+        if(enterOrderRq.getStopPrice() > 0 && matchResult.outcome() == MatchingOutcome.EXECUTED && enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER){
             eventPublisher.publish(new OrderActivatedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
             eventPublisher.publish(new OrderAcceptedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
         }
@@ -92,4 +95,6 @@ public class OrderHandler {
             eventPublisher.publish(new OrderRejectedEvent(deleteOrderRq.getRequestId(), deleteOrderRq.getOrderId(), ex.getReasons()));
         }
     }
+
+
 }

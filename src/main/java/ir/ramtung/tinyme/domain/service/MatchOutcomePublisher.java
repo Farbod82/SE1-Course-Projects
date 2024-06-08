@@ -48,17 +48,27 @@ public class MatchOutcomePublisher {
             return;
         }
         if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER){
-            if(enterOrderRq.getStopPrice() == 0) {
-                eventPublisher.publish(new OrderAcceptedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
+            eventPublisher.publish(new OrderAcceptedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
+            if(enterOrderRq.getStopPrice() > 0 && matchResult.outcome() == MatchingOutcome.EXECUTED){
+                eventPublisher.publish(new OrderActivatedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
             }
         }
         else {
             eventPublisher.publish(new OrderUpdatedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
         }
+        publishExecutionResults(matchResult,enterOrderRq);
+    }
+    public void publishAfterActivationResults(MatchResult matchResult, EnterOrderRq enterOrderRq) {
 
-        if(matchResult.outcome() == MatchingOutcome.STOP_LIMIT_ORDER_ACCEPTED){
-            eventPublisher.publish(new OrderAcceptedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
+        if (publishRejectedRequest(matchResult, enterOrderRq)){
+            return;
         }
+        eventPublisher.publish(new OrderActivatedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
+        publishExecutionResults(matchResult,enterOrderRq);
+    }
+
+
+    private void publishExecutionResults(MatchResult matchResult, EnterOrderRq enterOrderRq){
         if (!matchResult.trades().isEmpty()) {
             eventPublisher.publish(new OrderExecutedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
         }
@@ -69,6 +79,7 @@ public class MatchOutcomePublisher {
             eventPublisher.publish(new OpeningPriceEvent(enterOrderRq.getSecurityIsin(), openingPriceAndQuantity.get("price"), openingPriceAndQuantity.get("quantity")));
         }
     }
+
 
     private boolean publishRejectedRequest(MatchResult matchResult, EnterOrderRq enterOrderRq) {
         if (matchResult.outcome() == MatchingOutcome.NOT_ENOUGH_CREDIT) {

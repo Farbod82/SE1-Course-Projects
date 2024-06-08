@@ -17,12 +17,12 @@ import java.util.List;
 
 
 @Service
-public class OrderValdiator {
+public class OrderValidator {
     SecurityRepository securityRepository;
     BrokerRepository brokerRepository;
     ShareholderRepository shareholderRepository;
 
-    public OrderValdiator(SecurityRepository securityRepository, BrokerRepository brokerRepository, ShareholderRepository shareholderRepository, EventPublisher eventPublisher, Matcher matcher, MatchOutcomePublisher matchOutcomePublisher) {
+    public OrderValidator(SecurityRepository securityRepository, BrokerRepository brokerRepository, ShareholderRepository shareholderRepository, EventPublisher eventPublisher, Matcher matcher, MatchOutcomePublisher matchOutcomePublisher) {
         this.securityRepository = securityRepository;
         this.brokerRepository = brokerRepository;
         this.shareholderRepository = shareholderRepository;

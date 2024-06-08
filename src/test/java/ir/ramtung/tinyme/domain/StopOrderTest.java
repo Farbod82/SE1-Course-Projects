@@ -153,8 +153,9 @@ public class StopOrderTest {
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, "ABC", 500, LocalDateTime.now(), SELL, 50, 15500, broker2.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15800));
 
         assertThat(security.getStopOrderList().size()).isEqualTo(0);
-        verify(eventPublisher).publish(new OrderActivatedEvent(2, 500));
-        verify(eventPublisher).publish(new OrderAcceptedEvent(2, 500));
+        verify(eventPublisher,times(1)).publish(new OrderActivatedEvent(2, 500));
+        verify(eventPublisher,times(1)).publish(new OrderAcceptedEvent(2, 500));
+        verify(eventPublisher,times(1)).publish(new OrderAcceptedEvent(1, 600));
     }
 
     @Test
@@ -447,6 +448,8 @@ public class StopOrderTest {
         orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(3, "ABC", 20, LocalDateTime.now(), Side.BUY, 500, 15910, 1, shareholder.getShareholderId(), 0, 15670));
         verify(eventPublisher,times(1)).publish(new OrderActivatedEvent(2, 20));
         verify(eventPublisher,times(1)).publish(new OrderUpdatedEvent(3, 20));
+        verify(eventPublisher,times(1)).publish(new OrderAcceptedEvent(1, 16));
+        verify(eventPublisher,times(1)).publish(new OrderAcceptedEvent(2, 20));
         Trade trade1 = new Trade(security, 15800,500,stopOrder1,matchingBuyOrder1);
         verify(eventPublisher).publish(new OrderExecutedEvent(2, 20,List.of(new TradeDTO(trade1))));
 
