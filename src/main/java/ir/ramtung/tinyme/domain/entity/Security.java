@@ -1,5 +1,6 @@
 package ir.ramtung.tinyme.domain.entity;
 
+import ir.ramtung.tinyme.domain.service.OrderValidator;
 import ir.ramtung.tinyme.messaging.event.OrderActivatedEvent;
 import ir.ramtung.tinyme.messaging.exception.InvalidRequestException;
 import ir.ramtung.tinyme.messaging.request.DeleteOrderRq;
@@ -9,6 +10,7 @@ import ir.ramtung.tinyme.domain.service.Matcher;
 import ir.ramtung.tinyme.messaging.Message;
 import lombok.Builder;
 import lombok.Getter;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -39,6 +41,7 @@ public class Security {
     private LinkedList<Order>  activeStopOrderList = new LinkedList<>();
     private int latestPrice;
     EnterOrderRq lastProcessedReqID;
+
 
     public void setLatestPrice(Trade trade){
         latestPrice = trade.getPrice();

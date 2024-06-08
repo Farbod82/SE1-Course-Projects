@@ -40,7 +40,7 @@ public final class MatchResult {
         this.openingPrice = openingPrice;
     }
 
-    private MatchResult(MatchingOutcome outcome, Order remainder, LinkedList<Trade> trades) {
+    public MatchResult(MatchingOutcome outcome, Order remainder, LinkedList<Trade> trades) {
         this.outcome = outcome;
         this.remainder = remainder;
         this.trades = trades;
