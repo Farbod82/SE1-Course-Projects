@@ -525,8 +525,7 @@ public class AuctionMatchingTest {
                 new Order(9, security, Side.SELL, 4, 15600, broker1, shareholder2),
                 new Order(8, security, Side.SELL, 100, 15700, broker1, shareholder2)
         );
-//        Order order4 = new Order(3, security, Side.BUY, 300, 15500, broker, shareholder);
-//        security.getOrderBook().enqueue(order4);
+
         orders.forEach(order -> security.getOrderBook().enqueue(order));
 
         Order order1 = new Order(20,security, SELL,1,15700,broker1,shareholder2,LocalDateTime.now(),OrderStatus.NEW);

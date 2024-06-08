@@ -33,6 +33,8 @@ public class ChangeMatchStateHandler {
     Matcher matcher;
 
     MatchOutcomePublisher matchOutcomePublisher;
+
+
     private void handleActivatedStopOrders(Security security) {
         security.activateStopOrders();
         while(security.hasAnyActiveStopOrder()){
