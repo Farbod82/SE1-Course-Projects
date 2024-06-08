@@ -46,14 +46,11 @@ public class OrderHandler {
             MatchResult matchResult;
 
             if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER) {
-                if (security.isInAuctionMatchingState()){
-                    orderValdiator.validateEnterOrderRqForNewOrderInAuctionState(enterOrderRq);
-                }
                 matchResult = security.newOrder(enterOrderRq, broker, shareholder, matcher);
             }
-            else
+            else {
                 matchResult = security.updateOrder(enterOrderRq, matcher);
-
+            }
             if (! security.isInAuctionMatchingState()) {
                 publishingInstantlyActivatedStopLimitOrders(enterOrderRq,matchResult);
                 checkAllActivatedStopLimitOrders(security);
@@ -67,10 +64,10 @@ public class OrderHandler {
     private void checkAllActivatedStopLimitOrders(Security security) {
         MatchResult matchResult;
         matchOutcomePublisher.publishActivatedStopOrders(security);
-        while(security.hasAnyActiveStopOrder()){
+        while(security.hasAnyActiveStopOrder()) {
             matchResult = security.matchSingleStopOrder(matcher);
             EnterOrderRq stopOrderEnterOrderRq = security.getLastProcessedReqID();
-            matchOutcomePublisher.publishMatchOutComes(matchResult,stopOrderEnterOrderRq);
+            matchOutcomePublisher.publishMatchOutComes(matchResult, stopOrderEnterOrderRq);
             matchOutcomePublisher.publishActivatedStopOrders(security);
         }
     }

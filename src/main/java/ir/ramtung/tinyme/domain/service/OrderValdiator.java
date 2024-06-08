@@ -6,6 +6,7 @@ import ir.ramtung.tinyme.messaging.Message;
 import ir.ramtung.tinyme.messaging.exception.InvalidRequestException;
 import ir.ramtung.tinyme.messaging.request.DeleteOrderRq;
 import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
+import ir.ramtung.tinyme.messaging.request.OrderEntryType;
 import ir.ramtung.tinyme.repository.BrokerRepository;
 import ir.ramtung.tinyme.repository.SecurityRepository;
 import ir.ramtung.tinyme.repository.ShareholderRepository;
@@ -56,8 +57,16 @@ public class OrderValdiator {
             errors.add(Message.UNKNOWN_SHAREHOLDER_ID);
         if (enterOrderRq.getPeakSize() < 0 || enterOrderRq.getPeakSize() >= enterOrderRq.getQuantity())
             errors.add(Message.INVALID_PEAK_SIZE);
-        if (!errors.isEmpty())
+
+        if (!errors.isEmpty()) {
             throw new InvalidRequestException(errors);
+        }
+        else if (security.isInAuctionMatchingState() && enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER){
+            errors = validateEnterOrderRqForNewOrderInAuctionState(enterOrderRq);
+            if (!errors.isEmpty()){
+                throw new InvalidRequestException(errors);
+            }
+        }
     }
 
     public void validateDeleteOrderRq(DeleteOrderRq deleteOrderRq) throws InvalidRequestException {
@@ -69,7 +78,7 @@ public class OrderValdiator {
         if (!errors.isEmpty())
             throw new InvalidRequestException(errors);
     }
-    public void validateEnterOrderRqForNewOrderInAuctionState(EnterOrderRq enterOrderRq) throws InvalidRequestException{
+    public List<String> validateEnterOrderRqForNewOrderInAuctionState(EnterOrderRq enterOrderRq) throws InvalidRequestException{
         List<String> errors = new LinkedList<>();
         if(enterOrderRq.getMinimumExecutionQuantity() > 0) {
             errors.add(Message.NEW_ORDER_WITH_MINIMUM_EXECUTION_QUANTITY_NOT_ALLOWED_IN_AUCTION_MODE);
@@ -77,9 +86,7 @@ public class OrderValdiator {
         if(enterOrderRq.getStopPrice() > 0){
             errors.add(Message.NEW_STOP_LIMIT_ORDER_NOT_ALLOWED_IN_AUCTION_MODE);
         }
-        if (!errors.isEmpty())
-            throw new InvalidRequestException(errors);
-
+        return errors;
     }
 }
 
