@@ -36,18 +36,13 @@ public class ChangeMatchStateHandler {
 
 
     private void handleActivatedStopOrders(Security security) {
-        MatchResult matchResult;
-//        matchOutcomePublisher.publishActivatedStopOrders(security);
         security.activateStopOrders();
         while(security.hasAnyActiveStopOrder()){
-            matchResult = security.matchSingleStopOrder(matcher);
+            MatchResult matchResult = security.matchSingleStopOrder(matcher);
             EnterOrderRq stopOrderEnterOrderRq = security.getLastProcessedReqID();
             matchOutcomePublisher.publishAfterActivationResults(matchResult,stopOrderEnterOrderRq);
-//            matchOutcomePublisher.publishMatchOutComes(matchResult,stopOrderEnterOrderRq);
-//            matchOutcomePublisher.publishActivatedStopOrders(security);
         }
     }
-
     public ChangeMatchStateHandler(SecurityRepository securityRepository, BrokerRepository brokerRepository, ShareholderRepository shareholderRepository, EventPublisher eventPublisher, Matcher matcher, MatchOutcomePublisher matchOutcomePublisher) {
         this.securityRepository = securityRepository;
         this.brokerRepository = brokerRepository;
@@ -56,35 +51,34 @@ public class ChangeMatchStateHandler {
         this.matcher = matcher;
         this.matchOutcomePublisher = matchOutcomePublisher;
     }
-
     public void handleChangeMatchingState(ChangeMatchingStateRq changeMatchingStateRq){
         Security security = securityRepository.findSecurityByIsin(changeMatchingStateRq.getSecurityIsin());
+        OrderBook orderBook = security.getOrderBook();
         if(security.isInAuctionMatchingState()){
-            OrderBook orderBook = security.getOrderBook();
-            HashMap<String, Long> openingPriceAndQuantity = orderBook.calcCurrentOpeningPriceAndMaxQuantity(security.getLatestPrice());
+
             MatchResult matchResult = security.executeOpeningProcess(matcher);
-            for (Trade trade : matchResult.trades()){
-                eventPublisher.publish(new TradeEvent(security.getIsin(),trade.getPrice(),trade.getQuantity(),trade.getBuy().getOrderId(),trade.getSell().getOrderId()));
-            }
+            matchOutcomePublisher.publishTradeEvents(matchResult, security);
             if(changeMatchingStateRq.getTargetState() == MatchingState.CONTINUOUS){
                 handleActivatedStopOrders(security);
             }
             else if(changeMatchingStateRq.getTargetState() == MatchingState.AUCTION){
-//                matchOutcomePublisher.publishActivatedStopOrders(security);
-                LinkedList<OrderActivatedEvent> activatedOrdersEvents =  security.activateStopOrders();
-                for (var activated : activatedOrdersEvents){
-                    eventPublisher.publish(activated);
-                }
-                boolean anyActivatedOrderExisted = security.hasAnyActiveStopOrder();
-                security.enqueueActivatedStopOrdersAfterAuction();
-                openingPriceAndQuantity = orderBook.calcCurrentOpeningPriceAndMaxQuantity(security.getLatestPrice());
-                if (anyActivatedOrderExisted) {
-                    eventPublisher.publish(new OpeningPriceEvent(security.getIsin(), openingPriceAndQuantity.get("price"), openingPriceAndQuantity.get("quantity")));
-                }
+                activateStopOrdersInStateChange(security,orderBook);
             }
-
         }
         security.changeSecurityStatusTo(changeMatchingStateRq.getTargetState());
         eventPublisher.publish(new SecurityStateChangedEvent(LocalDateTime.now(),security.getIsin(),changeMatchingStateRq.getTargetState()));
+    }
+
+    private void activateStopOrdersInStateChange(Security security, OrderBook orderBook){
+        LinkedList<OrderActivatedEvent> activatedOrdersEvents =  security.activateStopOrders();
+        for (var activated : activatedOrdersEvents){
+            eventPublisher.publish(activated);
+        }
+        boolean anyActivatedOrderExisted = security.hasAnyActiveStopOrder();
+        security.enqueueActivatedStopOrdersAfterAuction();
+        HashMap<String, Long> openingPriceAndQuantity = orderBook.calcCurrentOpeningPriceAndMaxQuantity(security.getLatestPrice());
+        if (anyActivatedOrderExisted) {
+            eventPublisher.publish(new OpeningPriceEvent(security.getIsin(), openingPriceAndQuantity.get("price"), openingPriceAndQuantity.get("quantity")));
+        }
     }
 }

@@ -10,12 +10,10 @@ import java.util.stream.LongStream;
 public class OrderBook {
     private final LinkedList<Order> buyQueue;
     private final LinkedList<Order> sellQueue;
-
     public OrderBook() {
         buyQueue = new LinkedList<>();
         sellQueue = new LinkedList<>();
     }
-
     public void enqueue(Order order) {
         List<Order> queue = getQueue(order.getSide());
         ListIterator<Order> it = queue.listIterator();
@@ -28,11 +26,9 @@ public class OrderBook {
         order.queue();
         it.add(order);
     }
-
     private LinkedList<Order> getQueue(Side side) {
         return side == Side.BUY ? buyQueue : sellQueue;
     }
-
     public Order findByOrderId(Side side, long orderId) {
         var queue = getQueue(side);
         for (Order order : queue) {
@@ -41,7 +37,6 @@ public class OrderBook {
         }
         return null;
     }
-
     public boolean removeByOrderId(Side side, long orderId) {
         var queue = getQueue(side);
         var it = queue.listIterator();
@@ -53,7 +48,6 @@ public class OrderBook {
         }
         return false;
     }
-
     public Order matchWithFirst(Order newOrder) {
         var queue = getQueue(newOrder.getSide().opposite());
         if (newOrder.matches(queue.getFirst()))
@@ -61,39 +55,32 @@ public class OrderBook {
         else
             return null;
     }
-
     public void putBack(Order order) {
         LinkedList<Order> queue = getQueue(order.getSide());
         order.queue();
         queue.addFirst(order);
     }
-
     public void pushBack(Order order) {
         LinkedList<Order> queue = getQueue(order.getSide());
         order.queue();
         queue.add(order);
     }
-
     public void restoreOrder(Order order) {
         removeByOrderId(order.getSide(), order.getOrderId());
         putBack(order);
     }
-
     public boolean hasOrderOfType(Side side) {
         return !getQueue(side).isEmpty();
     }
-
     public void removeFirst(Side side) {
         getQueue(side).removeFirst();
     }
-
     public int totalSellQuantityByShareholder(Shareholder shareholder) {
         return sellQueue.stream()
                 .filter(order -> order.getShareholder().equals(shareholder))
                 .mapToInt(Order::getTotalQuantity)
                 .sum();
     }
-
     public long findQuantityOfAllTrades(long indicativeOpeningPrice){
         LinkedList<Order> newSellQueue = sellQueue.stream()
                 .filter(order -> order.getPrice() <= indicativeOpeningPrice)
@@ -106,15 +93,12 @@ public class OrderBook {
         long sumBuyQueue = newBuyQueue.stream().mapToLong(Order::getQuantity).sum();
         return Math.min(sumSellQueue, sumBuyQueue);
     }
-
     public Integer findMaximumPriceOfSellOrder(){
         return sellQueue.stream().mapToInt(Order::getPrice).max().orElse(0);
     }
-
     public long findMinimumPriceOfBuyOrder(){
         return buyQueue.stream().mapToLong(Order::getPrice).min().orElse(0);
     }
-
     public HashMap<String, Long> calcCurrentOpeningPriceAndMaxQuantity(long lastTradeValue){
         Integer maxOfInterval = findMaximumPriceOfSellOrder();
         long minOfInterval = findMinimumPriceOfBuyOrder();
@@ -139,5 +123,4 @@ public class OrderBook {
         }
         return result;
     }
-
 }

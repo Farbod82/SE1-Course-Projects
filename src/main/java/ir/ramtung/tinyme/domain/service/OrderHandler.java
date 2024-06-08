@@ -13,7 +13,6 @@ import ir.ramtung.tinyme.repository.ShareholderRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
-import java.util.LinkedList;
 
 @Service
 public class OrderHandler {
@@ -25,7 +24,7 @@ public class OrderHandler {
 
     MatchOutcomePublisher matchOutcomePublisher;
 
-    OrderValidator orderValdiator;
+    OrderValidator orderValidator;
 
     public OrderHandler(SecurityRepository securityRepository, BrokerRepository brokerRepository, ShareholderRepository shareholderRepository, EventPublisher eventPublisher, Matcher matcher, MatchOutcomePublisher matchOutcomePublisher, OrderValidator orderValdiator) {
         this.securityRepository = securityRepository;
@@ -34,11 +33,11 @@ public class OrderHandler {
         this.eventPublisher = eventPublisher;
         this.matcher = matcher;
         this.matchOutcomePublisher = matchOutcomePublisher;
-        this.orderValdiator = orderValdiator;
+        this.orderValidator = orderValdiator;
     }
     public void handleEnterOrder(EnterOrderRq enterOrderRq) {
         try {
-            orderValdiator.validateEnterOrderRq(enterOrderRq);
+            orderValidator.validateEnterOrderRq(enterOrderRq);
 
             Security security = securityRepository.findSecurityByIsin(enterOrderRq.getSecurityIsin());
             Broker broker = brokerRepository.findBrokerById(enterOrderRq.getBrokerId());
@@ -53,36 +52,26 @@ public class OrderHandler {
                 matchResult = security.updateOrder(enterOrderRq, matcher);
             }
 
-//            publishingInstantlyActivatedStopLimitOrders(enterOrderRq,matchResult);
-            checkAllActivatedStopLimitOrders(security);
+            checkForActivatedStopLimitOrders(security);
             matchOutcomePublisher.publishMatchOutComes(matchResult, enterOrderRq);
 
         } catch (InvalidRequestException ex) {
             eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), ex.getReasons()));
         }
     }
-    private void checkAllActivatedStopLimitOrders(Security security) {
+    private void checkForActivatedStopLimitOrders(Security security) {
         MatchResult matchResult;
         security.activateStopOrders();
-//        matchOutcomePublisher.publishActivatedStopOrders(security);
         while(security.hasAnyActiveStopOrder()) {
             matchResult = security.matchSingleStopOrder(matcher);
             EnterOrderRq stopOrderEnterOrderRq = security.getLastProcessedReqID();
-//            matchOutcomePublisher.publishMatchOutComes(matchResult, stopOrderEnterOrderRq);
             matchOutcomePublisher.publishAfterActivationResults(matchResult,stopOrderEnterOrderRq);
-//            matchOutcomePublisher.publishActivatedStopOrders(security);
             security.activateStopOrders();
-        }
-    }
-    private void publishingInstantlyActivatedStopLimitOrders(EnterOrderRq enterOrderRq, MatchResult matchResult) {
-        if(enterOrderRq.getStopPrice() > 0 && matchResult.outcome() == MatchingOutcome.EXECUTED && enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER){
-            eventPublisher.publish(new OrderActivatedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
-            eventPublisher.publish(new OrderAcceptedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
         }
     }
     public void handleDeleteOrder(DeleteOrderRq deleteOrderRq) {
         try {
-            orderValdiator.validateDeleteOrderRq(deleteOrderRq);
+            orderValidator.validateDeleteOrderRq(deleteOrderRq);
             Security security = securityRepository.findSecurityByIsin(deleteOrderRq.getSecurityIsin());
             security.deleteOrder(deleteOrderRq);
             eventPublisher.publish(new OrderDeletedEvent(deleteOrderRq.getRequestId(), deleteOrderRq.getOrderId()));
