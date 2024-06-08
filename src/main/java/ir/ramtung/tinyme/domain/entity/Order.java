@@ -31,6 +31,20 @@ public class Order {
     @Builder.Default
     protected  int stopPrice  = 0;
 
+    public Order(EnterOrderRq enterOrderRq,Security security,Broker broker,Shareholder shareholder) {
+        this.orderId = enterOrderRq.getOrderId();
+        this.security = security;
+        this.side = enterOrderRq.getSide();
+        this.quantity = enterOrderRq.getQuantity();
+        this.price = enterOrderRq.getPrice();
+        this.entryTime = enterOrderRq.getEntryTime();
+        this.broker = broker;
+        this.shareholder = shareholder;
+        this.status = OrderStatus.NEW;
+        this.minimumExecutionQuantity = enterOrderRq.getMinimumExecutionQuantity();
+        this.stopPrice = enterOrderRq.getStopPrice();
+    }
+
     public Order(long orderId, Security security, Side side, int quantity, int price, Broker broker, Shareholder shareholder, LocalDateTime entryTime, OrderStatus status,int minimumExecutionQuantity,boolean isActive, int stopPrice) {
         this.orderId = orderId;
         this.security = security;
@@ -44,20 +58,6 @@ public class Order {
         this.minimumExecutionQuantity = minimumExecutionQuantity;
         this.stopPrice = stopPrice;
         this.isActive = isActive;
-    }
-
-    public Order(long orderId, Security security, Side side, int quantity, int price, Broker broker, Shareholder shareholder, LocalDateTime entryTime, OrderStatus status,int minimumExecutionQuantity) {
-        this.orderId = orderId;
-        this.security = security;
-        this.side = side;
-        this.quantity = quantity;
-        this.price = price;
-        this.entryTime = entryTime;
-        this.broker = broker;
-        this.shareholder = shareholder;
-        this.status = status;
-        this.minimumExecutionQuantity = minimumExecutionQuantity;
-        this.stopPrice = 0;
     }
 
     public Order(long orderId, Security security, Side side, int quantity, int price, Broker broker, Shareholder shareholder, LocalDateTime entryTime, OrderStatus status) {

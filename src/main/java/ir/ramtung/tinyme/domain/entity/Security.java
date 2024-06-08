@@ -71,12 +71,9 @@ public class Security {
         if (isStopLimitOrder(enterOrderRq)) {
             return handleNewStopLimitOrder(enterOrderRq, broker, shareholder, matcher);
         } else if (isIcebergOrder(enterOrderRq)) {
-            order = new IcebergOrder(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
-                    enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder,
-                    enterOrderRq.getEntryTime(), enterOrderRq.getPeakSize());
+            order = new IcebergOrder(enterOrderRq, this,  broker, shareholder);
         } else {
-            order = new Order(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
-                    enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder, enterOrderRq.getEntryTime(), OrderStatus.NEW, enterOrderRq.getMinimumExecutionQuantity());
+            order = new Order(enterOrderRq, this, broker, shareholder);
         }
         if (matchingState == MatchingState.CONTINUOUS) {
             return matcher.execute(order);
