@@ -34,12 +34,7 @@ public class ChangeMatchStateHandler {
 
     MatchOutcomePublisher matchOutcomePublisher;
 
-    public void publishActivatedStopOrders(Security security){
-        LinkedList<OrderActivatedEvent> activatedOrdersEvents =  security.activateStopOrders();
-        for(OrderActivatedEvent orderActivatedEvent: activatedOrdersEvents){
-            eventPublisher.publish(orderActivatedEvent);
-        }
-    }
+
     private void handleActivatedStopOrders(Security security) {
         MatchResult matchResult;
         matchOutcomePublisher.publishActivatedStopOrders(security);

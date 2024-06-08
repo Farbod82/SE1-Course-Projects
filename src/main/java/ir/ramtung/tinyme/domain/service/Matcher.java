@@ -31,30 +31,33 @@ public class Matcher {
             }
             trade.increaseSellersCredit();
             trades.add(trade);
+            applyChangesOfMatching(newOrder ,matchingOrder ,orderBook);
 
-            if (newOrder.getQuantity() >= matchingOrder.getQuantity()) {
-                newOrder.decreaseQuantity(matchingOrder.getQuantity());
-                orderBook.removeFirst(matchingOrder.getSide());
-                if (matchingOrder instanceof IcebergOrder icebergOrder) {
-                    icebergOrder.decreaseQuantity(matchingOrder.getQuantity());
-                    icebergOrder.replenish();
-                    if (icebergOrder.getQuantity() > 0)
-                        orderBook.enqueue(icebergOrder);
-
-                }
-            } else {
-                matchingOrder.decreaseQuantity(newOrder.getQuantity());
-                newOrder.makeQuantityZero();
-            }
         }
         return MatchResult.executed(newOrder, trades);
+    }
+
+    void applyChangesOfMatching(Order newOrder ,Order matchingOrder ,OrderBook orderBook){
+        if (newOrder.getQuantity() >= matchingOrder.getQuantity()) {
+            newOrder.decreaseQuantity(matchingOrder.getQuantity());
+            orderBook.removeFirst(matchingOrder.getSide());
+            if (matchingOrder instanceof IcebergOrder icebergOrder) {
+                icebergOrder.decreaseQuantity(matchingOrder.getQuantity());
+                icebergOrder.replenish();
+                if (icebergOrder.getQuantity() > 0)
+                    orderBook.enqueue(icebergOrder);
+
+            }
+        } else {
+            matchingOrder.decreaseQuantity(newOrder.getQuantity());
+            newOrder.makeQuantityZero();
+        }
     }
 
     private void rollbackTrades(Order newOrder, LinkedList<Trade> trades) {
         if (newOrder.getSide() == Side.BUY) {
             newOrder.getBroker().increaseCreditBy(trades.stream().mapToLong(Trade::getTradedValue).sum());
             trades.forEach(trade -> trade.getSell().getBroker().decreaseCreditBy(trade.getTradedValue()));
-
             ListIterator<Trade> it = trades.listIterator(trades.size());
             while (it.hasPrevious()) {
                 newOrder.getSecurity().getOrderBook().restoreOrder(it.previous().getSell());
@@ -70,8 +73,6 @@ public class Matcher {
     }
 
     public MatchResult execute(Order order) {
-
-
         Order originalOrder = order.snapshot();
         MatchResult result = match(order);
         if (result.outcome() == MatchingOutcome.NOT_ENOUGH_CREDIT)
