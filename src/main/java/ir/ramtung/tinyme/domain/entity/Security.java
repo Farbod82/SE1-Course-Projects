@@ -44,10 +44,13 @@ public class Security {
         latestPrice = trade.getPrice();
     }
 
+    private int calculateNewQuantityOfShareholder(EnterOrderRq enterOrderRq, Order order){
+        return orderBook.totalSellQuantityByShareholder(order.getShareholder()) - order.getQuantity() + enterOrderRq.getQuantity();
+    }
+
     private boolean checkSellerShareholderDoesntHaveEnoughPositions(EnterOrderRq enterOrderRq,Order order) {
         return enterOrderRq.getSide() == Side.SELL &&
-                !order.getShareholder().hasEnoughPositionsOn(this,
-                        orderBook.totalSellQuantityByShareholder(order.getShareholder()) - order.getQuantity() + enterOrderRq.getQuantity());
+                !order.getShareholder().hasEnoughPositionsOn(this, calculateNewQuantityOfShareholder(enterOrderRq, order));
     }
 
     public MatchResult newOrder(EnterOrderRq enterOrderRq, Broker broker, Shareholder shareholder, Matcher matcher) {
