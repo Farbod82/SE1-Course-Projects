@@ -331,6 +331,7 @@ public class Security {
         for(Order order : activeStopOrderList){
             orderBook.enqueue(order);
         }
+        activeStopOrderList.clear();
     }
 
 }

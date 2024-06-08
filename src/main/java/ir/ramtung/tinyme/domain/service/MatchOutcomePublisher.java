@@ -1,10 +1,7 @@
 package ir.ramtung.tinyme.domain.service;
 
 
-import ir.ramtung.tinyme.domain.entity.MatchResult;
-import ir.ramtung.tinyme.domain.entity.MatchingOutcome;
-import ir.ramtung.tinyme.domain.entity.OrderBook;
-import ir.ramtung.tinyme.domain.entity.Security;
+import ir.ramtung.tinyme.domain.entity.*;
 import ir.ramtung.tinyme.messaging.EventPublisher;
 import ir.ramtung.tinyme.messaging.Message;
 import ir.ramtung.tinyme.messaging.TradeDTO;
@@ -35,12 +32,6 @@ public class MatchOutcomePublisher {
     }
 
 
-    public void publishActivatedStopOrders(Security security){
-        LinkedList<OrderActivatedEvent> activatedOrdersEvents =  security.activateStopOrders();
-        for(OrderActivatedEvent orderActivatedEvent: activatedOrdersEvents){
-            eventPublisher.publish(orderActivatedEvent);
-        }
-    }
 
 
     public void publishMatchOutComes(MatchResult matchResult, EnterOrderRq enterOrderRq){
@@ -96,5 +87,11 @@ public class MatchOutcomePublisher {
             return true;
         }
         return false;
+    }
+
+    public void publishTradeEvents(MatchResult matchResult, Security security){
+        for (Trade trade : matchResult.trades()){
+            eventPublisher.publish(new TradeEvent(security.getIsin(),trade.getPrice(),trade.getQuantity(),trade.getBuy().getOrderId(),trade.getSell().getOrderId()));
+        }
     }
 }
