@@ -124,14 +124,14 @@ public class Matcher {
             if(buyOrder.getPrice() > openingPrice){
                 trade.returnMoneyToBuyer();
             }
-            applyChangesOfActionMatching(buyOrder ,sellOrder ,orderBook);
+            applyChangesOfAuctionMatching(buyOrder ,sellOrder ,orderBook);
         }
         MatchResult result = MatchResult.executed(null, trades);
         changeShareholdersPosition(result);
         return  result;
     }
 
-    void applyChangesOfActionMatching(Order buyOrder ,Order sellOrder ,OrderBook orderBook){
+    void applyChangesOfAuctionMatching(Order buyOrder ,Order sellOrder ,OrderBook orderBook){
         if(buyOrder.getQuantity() == sellOrder.getQuantity()){
             orderBook.removeFirst(sellOrder.getSide());
             orderBook.removeFirst(buyOrder.getSide());
