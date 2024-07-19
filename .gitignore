@@ -27,7 +27,7 @@ target/
 .idea/
 .code/
 
-pom.xml
+
 mvnw.cmd
 mvnw
 HELP.md
